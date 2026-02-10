@@ -1,10 +1,10 @@
 import random
 
 test_board = [
-    2, 0, 2, 2,
     0, 0, 0, 0,
     0, 0, 0, 0,
-    0, 2, 0, 2,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
 ]
 
 def get_zeros_location(board):
@@ -40,7 +40,7 @@ def move_row_left(board, row): # for top row, row=0. Second row=1 etc
 
     # combine numbers that are the same
     for i in range(row_idx, row_end - 1):
-        if board[i] == board[i + 1]:
+        if board[i] == board[i + 1] and board[i] != 0:
             board[i] = board[i] * 2
             board[i + 1:row_end] = board[i + 2: row_end] + [0]  # shift the right side of the row left
 
@@ -56,11 +56,50 @@ def move_row_right(board, row):
 
     # combine numbers that are the same
     for i in range(row_end - 1, row_idx, -1):
-        if board[i] == board[i - 1]:
+        if board[i] == board[i - 1] and board[i] != 0:
             board[i] = board[i] * 2
             board[row_idx:i] = [0] + board[row_idx:i - 1]  # shift left side of the row right
 
     return board
 
+def move_column_up(board, column):  # Left column=0, middle left = 1 etc.
+    non_zero_values = [board[x] for x in range(column, column + 13, 4) if board[x] != 0]
+
+    for i in range(column, column + 13, 4):
+        if non_zero_values:
+            board[i] = non_zero_values[0]
+            non_zero_values = non_zero_values[1:]
+
+        else:
+            board[i] = 0
+
+    for i in range(column, column + 9, 4):
+        if board[i] == board[i + 4] and board[i] != 0:
+            board[i] = board[i] * 2
+            for j in range(i + 4, column + 9, 4):
+                board[j] = board[j + 4]
+            board[column + 12] = 0
+
+    return board
+
+def move_column_down(board, column):
+    non_zero_values = [board[x] for x in range(column + 12, column - 1, -4) if board[x] != 0]
+
+    for i in range(column + 12, column - 1, -4):
+        if non_zero_values:
+            board[i] = non_zero_values[0]
+            non_zero_values = non_zero_values[1:]
+
+        else:
+            board[i] = 0
+
+    for i in range(column + 12, column, -4):
+        if board[i] == board[i - 4] and board[i] != 0:
+            board[i] = board[i] * 2
+            for j in range(i - 4, column, -4):
+                board[j] = board[j - 4]
+            board[column] = 0
+
+    return board
+
 draw_board(test_board)
-draw_board(move_row_right(test_board, 0))
