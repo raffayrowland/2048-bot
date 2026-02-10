@@ -63,43 +63,72 @@ def move_row_right(board, row):
     return board
 
 def move_column_up(board, column):  # Left column=0, middle left = 1 etc.
-    non_zero_values = [board[x] for x in range(column, column + 13, 4) if board[x] != 0]
+    non_zero_values = [board[x] for x in range(column, column + 13, 4) if board[x] != 0]  # Gather nonzero values
 
+    # Shift the nonzero values to the top.
     for i in range(column, column + 13, 4):
         if non_zero_values:
             board[i] = non_zero_values[0]
             non_zero_values = non_zero_values[1:]
 
         else:
-            board[i] = 0
+            board[i] = 0  # When we run out of non zeros, populate the rest with 0s
 
+    # Merge tiles that are the same and adjacent
     for i in range(column, column + 9, 4):
         if board[i] == board[i + 4] and board[i] != 0:
-            board[i] = board[i] * 2
-            for j in range(i + 4, column + 9, 4):
+            board[i] = board[i] * 2  # Double the tile that has been merged
+            for j in range(i + 4, column + 9, 4):  # Shift the rest up
                 board[j] = board[j + 4]
             board[column + 12] = 0
 
     return board
 
 def move_column_down(board, column):
-    non_zero_values = [board[x] for x in range(column + 12, column - 1, -4) if board[x] != 0]
+    non_zero_values = [board[x] for x in range(column + 12, column - 1, -4) if board[x] != 0]  # Gather nonzero values
 
+    # Shift the nonzero values to the bottom
     for i in range(column + 12, column - 1, -4):
         if non_zero_values:
-            board[i] = non_zero_values[0]
+            board[i] = non_zero_values[0]  # Pop the next nonzero
             non_zero_values = non_zero_values[1:]
 
         else:
             board[i] = 0
 
+    # Merge tiles that are the same and adjacent
     for i in range(column + 12, column, -4):
-        if board[i] == board[i - 4] and board[i] != 0:
+        if board[i] == board[i - 4] and board[i] != 0:  # If the tiles are the same, merge them
             board[i] = board[i] * 2
-            for j in range(i - 4, column, -4):
+            for j in range(i - 4, column, -4):  # Shift the rest of them down
                 board[j] = board[j - 4]
             board[column] = 0
 
     return board
+
+def up(board):
+    for i in range(4):
+        board = move_column_up(board, i)
+
+    return board
+
+def down(board):
+    for i in range(4):
+        board = move_column_down(board, i)
+
+    return board
+
+def left(board):
+    for i in range(4):
+        board = move_row_left(board, i)
+
+    return board
+
+def right(board):
+    for i in range(4):
+        board = move_row_right(board, i)
+
+    return board
+
 
 draw_board(test_board)
