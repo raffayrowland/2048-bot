@@ -130,5 +130,57 @@ def right(board):
 
     return board
 
+def do_move_if_legal(board, move):
+    starting_board = board.copy()
 
-draw_board(test_board)
+    move(board)
+    changed = starting_board != board
+
+    if changed:
+        spawn_random_tile(board, get_zeros_location(board))
+
+    return changed, board
+
+def is_game_over(board):
+    if 0 in board:
+        return False
+    for move in (up, down, left, right):
+        starting_board = board.copy()
+        move(starting_board)
+        if starting_board != board:
+            return False
+
+    return True
+
+def start_game():
+    board = [
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ]
+
+    for _ in range(2):
+        spawn_random_tile(board, get_zeros_location(board))
+
+    return board
+
+moves = {
+    'w': up,
+    's': down,
+    'a': left,
+    'd': right,
+}
+
+board = start_game()
+
+while not is_game_over(board):
+    draw_board(board)
+    move = input('Enter move: ')
+    mapped_move = moves[move]
+    changed, board = do_move_if_legal(board, mapped_move)
+
+    if not changed:
+        print("Illegal move")
+
+print("Game over")
