@@ -1,4 +1,5 @@
 import random
+from board_score import evaluate_board
 
 def get_zeros_location(board):
     zeros = []
@@ -186,6 +187,7 @@ play_board = start_game()
 play_total_score = 0
 
 while not is_game_over(play_board):
+    print(evaluate_board(play_board))
     draw_board(play_board, play_total_score)
     move = input('Enter move: ')
     mapped_move = moves[move]
