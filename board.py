@@ -140,14 +140,15 @@ def right(board):
 
     return board, total_score
 
-def do_move_if_legal(board, move):
+def do_move_if_legal(board, move, spawn=True):
     b = board.copy()
 
     b, gained = move(b)
     changed = b != board
 
     if changed:
-        spawn_random_tile(b, get_zeros_location(b))
+        if spawn:
+            spawn_random_tile(b, get_zeros_location(b))
         return True, b, gained
 
     return False, board, 0
@@ -176,25 +177,25 @@ def start_game():
 
     return board
 
-moves = {
-    'w': up,
-    's': down,
-    'a': left,
-    'd': right,
-}
-
-play_board = start_game()
-play_total_score = 0
-
-while not is_game_over(play_board):
-    print(evaluate_board(play_board))
-    draw_board(play_board, play_total_score)
-    move = input('Enter move: ')
-    mapped_move = moves[move]
-    changed, play_board, gained = do_move_if_legal(play_board, mapped_move)
-    play_total_score += gained
-
-    if not changed:
-        print("Illegal move")
-
-print("Game over")
+# moves = {
+#     'w': up,
+#     's': down,
+#     'a': left,
+#     'd': right,
+# }
+#
+# play_board = start_game()
+# play_total_score = 0
+#
+# while not is_game_over(play_board):
+#     print(evaluate_board(play_board))
+#     draw_board(play_board, play_total_score)
+#     move = input('Enter move: ')
+#     mapped_move = moves[move]
+#     changed, play_board, gained = do_move_if_legal(play_board, mapped_move)
+#     play_total_score += gained
+#
+#     if not changed:
+#         print("Illegal move")
+#
+# print("Game over")
