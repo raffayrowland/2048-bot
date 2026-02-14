@@ -53,13 +53,21 @@ def expected_value_after_spawn(board):
 def one_play(states):
     next = []
     for board, probability, rm in states:
-        for move_idx, move in MOVES:
+        ever_changed = False
+        for move_idx, move in [(0, left), (1, right), (3, down)]:
             changed, result, _ = do_move_if_legal(board.copy(), move, spawn=False)
-            if not changed:
-                continue
-            root_move = move_idx if rm is None else rm
-            for child, prob in generate_all_possible_spawns(result):
-                next.append((child, probability * prob, root_move))
+            if changed:
+                ever_changed = True
+                root_move = move_idx if rm is None else rm
+                for child, prob in generate_all_possible_spawns(result):
+                    next.append((child, probability * prob, root_move))
+
+        if not ever_changed:
+            changed, result, _ = do_move_if_legal(board.copy(), up, spawn=False)
+            if changed:
+                root_move = 2 if rm is None else rm
+                for child, prob in generate_all_possible_spawns(result):
+                    next.append((child, probability * prob, root_move))
 
     return next
 
@@ -74,6 +82,7 @@ def get_best_move(state, depth=1):
     totals = [0, 0, 0, 0]
     for board, prob, root_move in plays:
         if root_move is not None:
+
             totals[root_move] += prob * evaluate_board(board)
 
     best = max(range(4), key=lambda m: totals[m])
@@ -83,15 +92,18 @@ play_board = start_game()
 draw_board(play_board, 0)
 score = 0
 rec = start_game_record("replays/latest_game.json", play_board, score)
+move_number = 0
 
 while not is_game_over(play_board):
-    best_moves = get_best_move((play_board, 1, None), depth=3)
+    depth = 4 if move_number < 1000 else 4
+    best_moves = get_best_move((play_board, 1, None), depth=depth)
     move_idx = best_moves[0]
     print(best_moves)
     _, play_board, add_score = do_move_if_legal(play_board, MOVES[best_moves[0]][1], spawn=True)
     score += add_score
     record_game_step(rec, move_idx, play_board, score)
     draw_board(play_board, score)
+    move_number += 1
 
 finish_game_record(rec)
 replay_recording("replays/latest_game.json")

@@ -289,7 +289,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
 
         animate_frame(0)
 
-    root.after(500, lambda: run_replay(0, list(initial_board), initial_score))
+    root.after(100, lambda: run_replay(0, list(initial_board), initial_score))
     root.mainloop()
 
 

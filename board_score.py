@@ -25,20 +25,11 @@ def snake_pattern(board):
         1, 2, 3, 4,
         8, 7, 6, 5,
         9, 10, 11, 12,
-        20, 19, 18, 17,
+        25, 19, 18, 17,
     ]
 
     return sum(w * tile_rank(v) for w, v in zip(weights, board))
 
-
-
-def highest_is_unique(board):
-    highest = max(board)
-
-    if board.count(highest) == 1:
-        return True
-
-    return False
 
 def count_empty_spaces(board):
     space_count = 0
@@ -93,9 +84,11 @@ def evaluate_board(board):
     spaces = count_empty_spaces(b)
     snake = snake_pattern(b)
     highest_corner = highest_in_corner(b)
+    full_bottom_row = bottom_row_full(b)
 
-    score += snake
-    score += spaces * 60
-    score += 300 if highest_corner else 0
+    score += snake * 2
+    score += spaces * 5000
+    score += 3000 if highest_corner else 0
+    score += 2000 if full_bottom_row else 0
 
     return score
