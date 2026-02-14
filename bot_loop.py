@@ -1,5 +1,6 @@
-from board import get_zeros_location, do_move_if_legal, left, right, up, down
+from board import get_zeros_location, do_move_if_legal, left, right, up, down, start_game, is_game_over, draw_board
 from board_score import evaluate_board
+from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
 
 _ = [
 #   0  1  2  3
@@ -78,5 +79,19 @@ def get_best_move(state, depth=1):
     best = max(range(4), key=lambda m: totals[m])
     return best, totals
 
-example = get_best_move((_, 1, None), depth=3)
-print(example)
+play_board = start_game()
+draw_board(play_board, 0)
+score = 0
+rec = start_game_record("replays/latest_game.json", play_board, score)
+
+while not is_game_over(play_board):
+    best_moves = get_best_move((play_board, 1, None), depth=3)
+    move_idx = best_moves[0]
+    print(best_moves)
+    _, play_board, add_score = do_move_if_legal(play_board, MOVES[best_moves[0]][1], spawn=True)
+    score += add_score
+    record_game_step(rec, move_idx, play_board, score)
+    draw_board(play_board, score)
+
+finish_game_record(rec)
+replay_recording("replays/latest_game.json")

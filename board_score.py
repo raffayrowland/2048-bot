@@ -11,13 +11,26 @@ _ = [
 def highest_in_corner(board):
     highest = max(board)
 
-    corners = [0, 3, 12, 15]
-
-    for corner in corners:
-        if board[corner] == highest:
-            return True
+    if board[12] == highest:
+        return True
 
     return False
+
+def snake_pattern(board):
+    def tile_rank(v):
+        # Returns log2 for powers of 2. Basically gets k in 2^k
+        return 0 if v == 0 else v.bit_length() - 1
+
+    weights = [
+        1, 2, 3, 4,
+        8, 7, 6, 5,
+        9, 10, 11, 12,
+        20, 19, 18, 17,
+    ]
+
+    return sum(w * tile_rank(v) for w, v in zip(weights, board))
+
+
 
 def highest_is_unique(board):
     highest = max(board)
@@ -61,10 +74,6 @@ def second_highest_next_to_highest(board):
     if index <= 11:
         possible_surroundings.append(index + 4)
 
-    print(highest)
-    print(second_highest)
-    print(possible_surroundings)
-
     for i in possible_surroundings:
         if board[i] == second_highest[0]:
             return True
@@ -81,12 +90,12 @@ def evaluate_board(board):
     b = board.copy()
     score = 0
 
-    max_in_corner = highest_in_corner(b)
-    full_bottom_row = bottom_row_full(b)
     spaces = count_empty_spaces(b)
+    snake = snake_pattern(b)
+    highest_corner = highest_in_corner(b)
 
-    score += 10 if max_in_corner else 0
-    score += 1.5 if full_bottom_row else 0
-    score += spaces
+    score += snake
+    score += spaces * 60
+    score += 300 if highest_corner else 0
 
     return score
