@@ -1,5 +1,3 @@
-from itertools import count
-
 _ = [
 #   0  1  2  3
     4, 8, 0, 0, # 0
@@ -16,17 +14,18 @@ def highest_in_corner(board):
 
     return False
 
-def snake_pattern(board):
+def snake_pattern(board, weights=None):
+    if weights is None:
+        weights = [
+            0, 0, 0, 0,
+            2, 1, 0, 0,
+            9, 10, 12, 15,
+            50, 35, 25, 20,
+        ]
+
     def tile_rank(v):
         # Returns log2 for powers of 2. Basically gets k in 2^k
         return 0 if v == 0 else v.bit_length() - 1
-
-    weights = [
-        1, 2, 3, 4,
-        8, 7, 6, 5,
-        9, 10, 11, 12,
-        25, 19, 18, 17,
-    ]
 
     return sum(w * tile_rank(v) for w, v in zip(weights, board))
 
@@ -78,17 +77,22 @@ def bottom_row_full(board):
     return True
 
 def evaluate_board(board):
-    b = board.copy()
     score = 0
+    weights = [
+        1, 2, 3, 4,
+        8, 7, 6, 5,
+        9, 10, 11, 12,
+        25, 19, 18, 17,
+    ]
 
-    spaces = count_empty_spaces(b)
-    snake = snake_pattern(b)
-    highest_corner = highest_in_corner(b)
-    full_bottom_row = bottom_row_full(b)
+    spaces = count_empty_spaces(board)
+    snake = snake_pattern(board, weights)
+    highest_corner = highest_in_corner(board)
+    # full_bottom_row = bottom_row_full(board)
 
-    score += snake * 2
-    score += spaces * 5000
+    score += snake * 10
+    score += spaces * 50
     score += 3000 if highest_corner else 0
-    score += 2000 if full_bottom_row else 0
+    # score += 2000 if full_bottom_row else 0
 
     return score

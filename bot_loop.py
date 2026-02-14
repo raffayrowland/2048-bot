@@ -31,6 +31,9 @@ def generate_all_possible_spawns(board):
 
     return configurations
 
+def get_cached_play_or_cache_play(state):
+    pass
+
 def expected_value_after_spawn(board):
     zeros = get_zeros_location(board)
     zero_count = len(zeros)
@@ -51,6 +54,7 @@ def expected_value_after_spawn(board):
     return expected_value
 
 def one_play(states):
+    # States is list like [(board, probability, root_move), ... ]
     next = []
     for board, probability, rm in states:
         ever_changed = False
@@ -95,12 +99,16 @@ rec = start_game_record("replays/latest_game.json", play_board, score)
 move_number = 0
 
 while not is_game_over(play_board):
-    depth = 4 if move_number < 1000 else 4
+    depth = 3 if move_number < 50 else 3
+
     best_moves = get_best_move((play_board, 1, None), depth=depth)
     move_idx = best_moves[0]
+
     print(best_moves)
+
     _, play_board, add_score = do_move_if_legal(play_board, MOVES[best_moves[0]][1], spawn=True)
     score += add_score
+
     record_game_step(rec, move_idx, play_board, score)
     draw_board(play_board, score)
     move_number += 1

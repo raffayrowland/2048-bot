@@ -1,5 +1,4 @@
 import random
-from board_score import evaluate_board
 
 def get_zeros_location(board):
     zeros = []
@@ -176,26 +175,3 @@ def start_game():
         spawn_random_tile(board, get_zeros_location(board))
 
     return board
-
-# moves = {
-#     'w': up,
-#     's': down,
-#     'a': left,
-#     'd': right,
-# }
-#
-# play_board = start_game()
-# play_total_score = 0
-#
-# while not is_game_over(play_board):
-#     print(evaluate_board(play_board))
-#     draw_board(play_board, play_total_score)
-#     move = input('Enter move: ')
-#     mapped_move = moves[move]
-#     changed, play_board, gained = do_move_if_legal(play_board, mapped_move)
-#     play_total_score += gained
-#
-#     if not changed:
-#         print("Illegal move")
-#
-# print("Game over")
