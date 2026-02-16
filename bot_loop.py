@@ -11,6 +11,20 @@ testing_board = [
 
 MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
+MAX_CACHE_SIZE = 1_000_000
+best_cache = {}
+worst_cache = {}
+
+def clear_cache():
+    global best_cache
+    global worst_cache
+    print(f"Best cache size: {len(best_cache)}, Worst cache size: {len(worst_cache)}")
+
+    if len(best_cache) > MAX_CACHE_SIZE:
+        best_cache.clear()
+    if len(worst_cache) > MAX_CACHE_SIZE:
+        worst_cache.clear()
+
 def generate_all_spawns(state):
     # State is (move_idx, board)
     possible_spawns = []
@@ -45,10 +59,14 @@ def get_boards_after_possible_moves(board):
 
 def get_best_player_move(state, depth):
     # State is tuple like (root_move_idx, board)
+    board_key = (tuple(state[1]), depth)
+    if board_key in best_cache:
+        return best_cache[board_key]
 
     post_move_boards = get_boards_after_possible_moves(state[1])
 
     if not post_move_boards:
+        best_cache[board_key] = (None, -1000)
         return None, -1000
 
     worst_case_spawn_scores = {
@@ -63,18 +81,29 @@ def get_best_player_move(state, depth):
         worst_case_spawn_scores[move_idx] = worst_case[2]
 
     possible_moves = [(k, v) for k, v in worst_case_spawn_scores.items() if v is not None]
-    return max(possible_moves, key=lambda x: x[1]) if possible_moves else None
+    out = max(possible_moves, key=lambda x: x[1]) if possible_moves else None
+    best_cache[board_key] = out
+    return out
 
 
 def get_worst_spawn(state, depth):
     # State is tuple like (root_move_idx, board)
+    board_key = (tuple(state[1]), depth)
+    if board_key in worst_cache:
+        cached = worst_cache[board_key]
+        return state[0], state[1], cached[2]
+
     post_spawn_boards = generate_all_spawns(state)
 
     if not post_spawn_boards:
         if depth == 0:
-            return state[0], state[1], evaluate_board(state[1])
+            out = state[0], state[1], evaluate_board(state[1])
+            worst_cache[board_key] = out
+            return out
         best_move = get_best_player_move(state, depth - 1)
-        return state[0], state[1], best_move[1]
+        out = state[0], state[1], best_move[1]
+        worst_cache[board_key] = out
+        return out
 
     if depth == 0:
         worst_case = None  # Tuple like (move_idx, board, board_score)
@@ -87,7 +116,9 @@ def get_worst_spawn(state, depth):
             elif board_score < worst_case[2]:
                 worst_case = (move_idx, board, board_score)
 
-        return worst_case
+        out = worst_case
+        worst_cache[board_key] = out
+        return out
 
     worst_spawn = None
     for move_idx, board in post_spawn_boards:
@@ -99,7 +130,9 @@ def get_worst_spawn(state, depth):
         elif score < worst_spawn[2]:
             worst_spawn = (move_idx, board, score)
 
-    return worst_spawn
+    out = worst_spawn
+    worst_cache[board_key] = out
+    return out
 
 play_board = start_game()
 draw_board(play_board)
@@ -107,7 +140,7 @@ total_score = 0
 rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
 while not is_game_over(play_board):
-    best_move = get_best_player_move((None, play_board), 5)
+    best_move = get_best_player_move((None, play_board), 9)
     if best_move[0] is None:
         break
     print(best_move)
@@ -117,6 +150,7 @@ while not is_game_over(play_board):
     record_game_step(rec, best_move[0], play_board, total_score)
 
     draw_board(play_board, total_score)
+    clear_cache()
 
 finish_game_record(rec)
 replay_recording("replays/latest_game.json")

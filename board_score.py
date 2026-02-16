@@ -90,9 +90,9 @@ def evaluate_board(board):
     highest_corner = highest_in_corner(board)
     # full_bottom_row = bottom_row_full(board)
 
-    score += snake * 10
-    score += spaces * 300
-    score += 300 if highest_corner else 0
+    score += snake * 0.5
+    score += spaces * 40
+    score += 100 if highest_corner else 0
     # score += 2000 if full_bottom_row else 0
 
     return score
