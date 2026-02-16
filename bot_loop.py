@@ -1,117 +1,122 @@
-from board import get_zeros_location, do_move_if_legal, left, right, up, down, start_game, is_game_over, draw_board
+from board import draw_board, start_game, is_game_over, get_zeros_location, do_move_if_legal, left, right, up, down
 from board_score import evaluate_board
 from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
 
-_ = [
-#   0  1  2  3
-    2, 2, 2, 0, # 0
-    2, 2, 2, 2, # 4
-    2, 2, 2, 0, # 8
-    8, 4, 4, 2, # 12
+testing_board = [
+    0, 0, 0, 0,
+    0, 0, 2, 0,
+    8, 0, 0, 0,
+    0, 0, 4, 0
 ]
 
-MOVES = [(0, left), (1, right), (2, up), (3, down)]
+MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
-def generate_all_possible_spawns(board):
-    zeros = get_zeros_location(board)
-    configurations = []
-    zero_count = len(zeros)
+def generate_all_spawns(state):
+    # State is (move_idx, board)
+    possible_spawns = []
+    zeros = get_zeros_location(state[1])
 
     for zero in zeros:
-        p2 = 0.9 / zero_count
-        p4 = 0.1 / zero_count
-
-        b2 = board.copy()
+        b2 = state[1].copy()
+        b4 = state[1].copy()
         b2[zero] = 2
-        configurations.append([b2, p2])
-
-        b4 = board.copy()
         b4[zero] = 4
-        configurations.append([b4, p4])
+        possible_spawns.append((state[0], b2))
+        possible_spawns.append((state[0], b4))
 
-    return configurations
+    return possible_spawns
 
-def get_cached_play_or_cache_play(state):
-    pass
+def get_boards_after_possible_moves(board):
+    new_boards = []  # [(move_idx, board), ...]
+    overall_changed = False
 
-def expected_value_after_spawn(board):
-    zeros = get_zeros_location(board)
-    zero_count = len(zeros)
+    for move in MOVES[:3]:
+        changed, new_board, _ = do_move_if_legal(board.copy(), move[1], spawn=False)
+        if changed:
+            overall_changed = True
+            new_boards.append((move[0], new_board))
 
-    if zero_count == 0:
-        return evaluate_board(board)
+    if not overall_changed:
+        changed, new_board, _ = do_move_if_legal(board.copy(), up, spawn=False)
+        if changed:
+            new_boards.append((3, new_board))
 
-    expected_value = 0
-    for zero in zeros:
-        board[zero] = 2
-        expected_value += (0.9 / zero_count) * evaluate_board(board)
+    return new_boards
 
-        board[zero] = 4
-        expected_value += (0.1 / zero_count) * evaluate_board(board)
+def get_best_player_move(state, depth):
+    # State is tuple like (root_move_idx, board)
 
-        board[zero] = 0
+    post_move_boards = get_boards_after_possible_moves(state[1])
 
-    return expected_value
+    if not post_move_boards:
+        return None, -1000
 
-def one_play(states):
-    # States is list like [(board, probability, root_move), ... ]
-    next = []
-    for board, probability, rm in states:
-        ever_changed = False
-        for move_idx, move in [(0, left), (1, right), (3, down)]:
-            changed, result, _ = do_move_if_legal(board.copy(), move, spawn=False)
-            if changed:
-                ever_changed = True
-                root_move = move_idx if rm is None else rm
-                for child, prob in generate_all_possible_spawns(result):
-                    next.append((child, probability * prob, root_move))
+    worst_case_spawn_scores = {
+        0: None,
+        1: None,
+        2: None,
+        3: None
+    }
 
-        if not ever_changed:
-            changed, result, _ = do_move_if_legal(board.copy(), up, spawn=False)
-            if changed:
-                root_move = 2 if rm is None else rm
-                for child, prob in generate_all_possible_spawns(result):
-                    next.append((child, probability * prob, root_move))
+    for move_idx, board in post_move_boards:
+        worst_case = get_worst_spawn((move_idx, board), depth - 1) if depth > 0 else get_worst_spawn((move_idx, board), 0)
+        worst_case_spawn_scores[move_idx] = worst_case[2]
 
-    return next
+    possible_moves = [(k, v) for k, v in worst_case_spawn_scores.items() if v is not None]
+    return max(possible_moves, key=lambda x: x[1]) if possible_moves else None
 
 
-def get_best_move(state, depth=1):
-    # State is tuple like (board, probability, root_move)
-    plays = [state]
+def get_worst_spawn(state, depth):
+    # State is tuple like (root_move_idx, board)
+    post_spawn_boards = generate_all_spawns(state)
 
-    for _ in range(depth):
-        plays = one_play(plays)
+    if not post_spawn_boards:
+        if depth == 0:
+            return state[0], state[1], evaluate_board(state[1])
+        best_move = get_best_player_move(state, depth - 1)
+        return state[0], state[1], best_move[1]
 
-    totals = [0, 0, 0, 0]
-    for board, prob, root_move in plays:
-        if root_move is not None:
+    if depth == 0:
+        worst_case = None  # Tuple like (move_idx, board, board_score)
 
-            totals[root_move] += prob * evaluate_board(board)
+        for move_idx, board in post_spawn_boards:
+            board_score = evaluate_board(board)
+            if worst_case is None:
+                worst_case = (move_idx, board, board_score)
 
-    best = max(range(4), key=lambda m: totals[m])
-    return best, totals
+            elif board_score < worst_case[2]:
+                worst_case = (move_idx, board, board_score)
+
+        return worst_case
+
+    worst_spawn = None
+    for move_idx, board in post_spawn_boards:
+        best_move_for_this_spawn = get_best_player_move((move_idx, board), depth - 1)
+        score = best_move_for_this_spawn[1]
+        if worst_spawn is None:
+            worst_spawn = (move_idx, board, score)
+
+        elif score < worst_spawn[2]:
+            worst_spawn = (move_idx, board, score)
+
+    return worst_spawn
 
 play_board = start_game()
-draw_board(play_board, 0)
-score = 0
-rec = start_game_record("replays/latest_game.json", play_board, score)
-move_number = 0
+draw_board(play_board)
+total_score = 0
+rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
 while not is_game_over(play_board):
-    depth = 3 if move_number < 50 else 3
+    best_move = get_best_player_move((None, play_board), 5)
+    if best_move[0] is None:
+        break
+    print(best_move)
+    _, play_board, score = do_move_if_legal(play_board, MOVES[best_move[0]][1], spawn=True)
+    total_score += score
 
-    best_moves = get_best_move((play_board, 1, None), depth=depth)
-    move_idx = best_moves[0]
+    record_game_step(rec, best_move[0], play_board, total_score)
 
-    print(best_moves)
-
-    _, play_board, add_score = do_move_if_legal(play_board, MOVES[best_moves[0]][1], spawn=True)
-    score += add_score
-
-    record_game_step(rec, move_idx, play_board, score)
-    draw_board(play_board, score)
-    move_number += 1
+    draw_board(play_board, total_score)
 
 finish_game_record(rec)
 replay_recording("replays/latest_game.json")

@@ -14,7 +14,7 @@ def spawn_random_tile(board, zeros):
     board[zeros[index]] = 4 if tile_value == 1 else 2
     return board
 
-def draw_board(board, score):
+def draw_board(board, score=0):
     print(f"Score: {score}")
     for i in range(len(board)):
         print(board[i], end=' ')

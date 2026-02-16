@@ -7,8 +7,8 @@ from typing import Any
 MOVE_CODE_TO_NAME = {
     0: "left",
     1: "right",
-    2: "up",
-    3: "down",
+    2: "down",
+    3: "up",
     "a": "left",
     "d": "right",
     "w": "up",
