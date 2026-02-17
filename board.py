@@ -17,7 +17,7 @@ def spawn_random_tile(board, zeros):
 def draw_board(board, score=0):
     print(f"Score: {score}")
     for i in range(len(board)):
-        print(board[i], end=' ')
+        print(board[i], " " * (5 - len(board[i])), end=' ')
         if (i + 1) % 4 == 0:  # newline every 4 numbers
             print()
 
