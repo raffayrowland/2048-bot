@@ -214,17 +214,56 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
                 return i
         return None
 
-    draw_board_state(initial_board)
+    states: list[tuple[list[int], int]] = [(list(initial_board), initial_score)]
+    for step in steps:
+        prev_score = states[-1][1]
+        states.append((list(step["board"]), int(step.get("score", prev_score))))
 
-    def run_replay(step_index: int, current_board: list[int], current_score: int) -> None:
-        if step_index >= len(steps):
-            score_var.set(f"Score: {current_score} (Replay complete)")
+    current_step = 0  # Index of the board currently shown in `states`.
+    paused = False
+    animating = False
+    queued_after: str | None = None
+
+    def cancel_queued() -> None:
+        nonlocal queued_after
+        if queued_after is not None:
+            root.after_cancel(queued_after)
+            queued_after = None
+
+    def set_status_text() -> None:
+        score = states[current_step][1]
+        if current_step >= len(steps):
+            suffix = " (Replay complete)"
+        elif paused:
+            suffix = " (Paused)"
+        else:
+            suffix = ""
+        score_var.set(f"Score: {score}{suffix}")
+
+    def show_current_board() -> None:
+        board, _ = states[current_step]
+        draw_board_state(board)
+        set_status_text()
+
+    def maybe_schedule_next() -> None:
+        nonlocal queued_after
+        cancel_queued()
+        if paused or animating or current_step >= len(steps):
+            return
+        queued_after = root.after(pause_ms, lambda: play_step(current_step, keep_paused=False))
+
+    def play_step(step_index: int, keep_paused: bool) -> None:
+        nonlocal current_step, animating, paused, queued_after
+        if animating or step_index >= len(steps):
             return
 
+        cancel_queued()
+        animating = True
+
+        current_board, _ = states[step_index]
         step = steps[step_index]
         move_name = normalize_move(step["move"])
-        next_board = list(step["board"])
-        next_score = int(step.get("score", current_score))
+        next_board, _ = states[step_index + 1]
 
         shifted, movements = simulate_move_and_transitions(current_board, move_name)
         tile_items = []
@@ -249,7 +288,17 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
 
         frames = max(6, anim_ms // 16)
 
+        def finalize_step() -> None:
+            nonlocal current_step, animating, paused
+            current_step = step_index + 1
+            animating = False
+            if keep_paused:
+                paused = True
+            show_current_board()
+            maybe_schedule_next()
+
         def animate_frame(frame: int) -> None:
+            nonlocal queued_after
             t = frame / frames
             eased = 1 - (1 - t) * (1 - t)
 
@@ -264,32 +313,55 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
                 canvas.coords(text, x + tile_px / 2, y + tile_px / 2)
 
             if frame < frames:
-                root.after(max(1, anim_ms // frames), lambda: animate_frame(frame + 1))
-            else:
-                # Snap to board after movement (before spawn), then show spawn pop.
-                s_idx = spawn_index(shifted, next_board)
-                if s_idx is None:
-                    draw_board_state(next_board)
-                    score_var.set(f"Score: {next_score}")
-                    root.after(pause_ms, lambda: run_replay(step_index + 1, next_board, next_score))
-                    return
+                queued_after = root.after(max(1, anim_ms // frames), lambda: animate_frame(frame + 1))
+                return
 
-                pop_frames = 5
+            s_idx = spawn_index(shifted, next_board)
+            if s_idx is None:
+                finalize_step()
+                return
 
-                def animate_spawn_pop(pop_frame: int) -> None:
-                    scale = 0.65 + 0.35 * (pop_frame / pop_frames)
-                    draw_board_state(next_board, spawn_idx=s_idx, spawn_scale=scale)
-                    if pop_frame < pop_frames:
-                        root.after(16, lambda: animate_spawn_pop(pop_frame + 1))
-                    else:
-                        score_var.set(f"Score: {next_score}")
-                        root.after(pause_ms, lambda: run_replay(step_index + 1, next_board, next_score))
+            pop_frames = 5
 
-                animate_spawn_pop(0)
+            def animate_spawn_pop(pop_frame: int) -> None:
+                nonlocal queued_after
+                scale = 0.65 + 0.35 * (pop_frame / pop_frames)
+                draw_board_state(next_board, spawn_idx=s_idx, spawn_scale=scale)
+                if pop_frame < pop_frames:
+                    queued_after = root.after(16, lambda: animate_spawn_pop(pop_frame + 1))
+                else:
+                    finalize_step()
+
+            animate_spawn_pop(0)
 
         animate_frame(0)
 
-    root.after(100, lambda: run_replay(0, list(initial_board), initial_score))
+    def on_key(event: tk.Event) -> None:
+        nonlocal paused, current_step
+        key = event.keysym
+
+        if key == "space":
+            paused = not paused
+            set_status_text()
+            if not paused:
+                maybe_schedule_next()
+            return
+
+        if key == "Left":
+            if paused and not animating and current_step > 0:
+                cancel_queued()
+                current_step -= 1
+                show_current_board()
+            return
+
+        if key == "Right":
+            if paused and not animating and current_step < len(steps):
+                play_step(current_step, keep_paused=True)
+
+    draw_board_state(initial_board)
+    set_status_text()
+    root.bind("<KeyPress>", on_key)
+    root.after(100, maybe_schedule_next)
     root.mainloop()
 
 

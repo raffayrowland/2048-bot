@@ -44,16 +44,16 @@ def get_boards_after_possible_moves(board):
     new_boards = []  # [(move_idx, board), ...]
     overall_changed = False
 
-    for move in MOVES[:3]:
+    for move in MOVES:
         changed, new_board, _ = do_move_if_legal(board.copy(), move[1], spawn=False)
         if changed:
             overall_changed = True
             new_boards.append((move[0], new_board))
 
-    if not overall_changed:
-        changed, new_board, _ = do_move_if_legal(board.copy(), up, spawn=False)
-        if changed:
-            new_boards.append((3, new_board))
+    # if not overall_changed:
+    #     changed, new_board, _ = do_move_if_legal(board.copy(), up, spawn=False)
+    #     if changed:
+    #         new_boards.append((3, new_board))
 
     return new_boards
 
@@ -91,7 +91,7 @@ def get_worst_spawn(state, depth):
     board_key = (tuple(state[1]), depth)
     if board_key in worst_cache:
         cached = worst_cache[board_key]
-        return state[0], state[1], cached[2]
+        return state[0], cached[1], cached[2]
 
     post_spawn_boards = generate_all_spawns(state)
 
@@ -134,23 +134,25 @@ def get_worst_spawn(state, depth):
     worst_cache[board_key] = out
     return out
 
-play_board = start_game()
-draw_board(play_board)
-total_score = 0
-rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
-while not is_game_over(play_board):
-    best_move = get_best_player_move((None, play_board), 9)
-    if best_move[0] is None:
-        break
-    print(best_move)
-    _, play_board, score = do_move_if_legal(play_board, MOVES[best_move[0]][1], spawn=True)
-    total_score += score
+if __name__ == "__main__":
+    play_board = start_game()
+    draw_board(play_board)
+    total_score = 0
+    rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
-    record_game_step(rec, best_move[0], play_board, total_score)
+    while not is_game_over(play_board):
+        best_move = get_best_player_move((None, play_board), 7)
+        if best_move[0] is None:
+            break
+        print(best_move)
+        _, play_board, score = do_move_if_legal(play_board, MOVES[best_move[0]][1], spawn=True)
+        total_score += score
 
-    draw_board(play_board, total_score)
-    clear_cache()
+        record_game_step(rec, best_move[0], play_board, total_score)
 
-finish_game_record(rec)
-replay_recording("replays/latest_game.json")
+        draw_board(play_board, total_score)
+        clear_cache()
+
+    finish_game_record(rec)
+    replay_recording("replays/latest_game.json")

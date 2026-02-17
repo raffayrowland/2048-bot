@@ -91,8 +91,8 @@ def evaluate_board(board):
     # full_bottom_row = bottom_row_full(board)
 
     score += snake * 0.5
-    score += spaces * 40
-    score += 100 if highest_corner else 0
+    score += spaces * 20
+    score += 300 if highest_corner else 0
     # score += 2000 if full_bottom_row else 0
 
     return score
