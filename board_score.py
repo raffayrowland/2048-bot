@@ -31,7 +31,7 @@ def count_empty_spaces(board):
 
     return space_count
 
-def evaluate_board(board):
+def evaluate_board(board, prints=False):
     score = 0
     weights = [
         0, 0, 0, 0,
@@ -42,13 +42,21 @@ def evaluate_board(board):
 
     spaces = count_empty_spaces(board)
 
-    max_possible_snake_score = get_max_possible_snake(board)
-    snake = snake_pattern(board, weights) / max_possible_snake_score
+    # max_possible_snake_score = get_max_possible_snake(board)
+    # snake = snake_pattern(board, weights) / max_possible_snake_score
+    snake = snake_pattern(board, weights)
 
     highest_corner = highest_in_corner(board)
 
-    score += snake * 15
-    score += spaces * 1
-    score += 30 if highest_corner else 0
+    # score += snake * 1000  # Max 1000
+    # score += spaces * 1  # Max 15
+    # score += 30 if highest_corner else 0
+    score += snake
+    score += spaces * 0.01 * snake
+    score += snake * 0.1 if highest_corner else 0
+
+    if prints:
+        print(score)
+        print(f"Snake: {snake}    + {snake}\nSpaces: {spaces}     + {spaces * 0.01 * snake}\nHighest Corner: {snake * 0.1 if highest_corner else 0}")
 
     return score

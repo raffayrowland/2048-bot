@@ -46,18 +46,11 @@ def generate_all_spawns(state):
 
 def get_boards_after_possible_moves(board):
     new_boards = []  # [(move_idx, board), ...]
-    overall_changed = False
 
     for move in MOVES:
         changed, new_board, _ = do_move_if_legal(board.copy(), move[1], spawn=False)
         if changed:
-            overall_changed = True
             new_boards.append((move[0], new_board))
-
-    # if not overall_changed:
-    #     changed, new_board, _ = do_move_if_legal(board.copy(), up, spawn=False)
-    #     if changed:
-    #         new_boards.append((3, new_board))
 
     return new_boards
 
@@ -161,6 +154,8 @@ if __name__ == "__main__":
         record_game_step(rec, best_move[0], play_board, total_score)
 
         draw_board(play_board, total_score)
+        evaluate_board(play_board, prints=True)
+        print()
         clear_cache()
 
     finish_game_record(rec)
