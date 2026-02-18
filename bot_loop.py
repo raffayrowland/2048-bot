@@ -1,6 +1,7 @@
 from board import draw_board, start_game, is_game_over, get_zeros_location, do_move_if_legal, left, right, up, down
 from board_score import evaluate_board
 from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
+from collections import OrderedDict
 
 testing_board = [
     0, 0, 0, 0,
@@ -12,18 +13,21 @@ testing_board = [
 MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
 MAX_CACHE_SIZE = 1_000_000
-best_cache = {}
-worst_cache = {}
+best_cache = OrderedDict()
+worst_cache = OrderedDict()
 
 def clear_cache():
     global best_cache
     global worst_cache
     print(f"Best cache size: {len(best_cache)}, Worst cache size: {len(worst_cache)}")
 
-    if len(best_cache) > MAX_CACHE_SIZE:
-        best_cache.clear()
-    if len(worst_cache) > MAX_CACHE_SIZE:
-        worst_cache.clear()
+    overflow = len(best_cache) - MAX_CACHE_SIZE
+    for _ in range(max(0, overflow)):
+        best_cache.popitem(last=False)
+
+    overflow = len(worst_cache) - MAX_CACHE_SIZE
+    for _ in range(max(0, overflow)):
+        worst_cache.popitem(last=False)
 
 def generate_all_spawns(state):
     # State is (move_idx, board)
@@ -142,7 +146,7 @@ if __name__ == "__main__":
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_player_move((None, play_board), 7 )
+        best_move = get_best_player_move((None, play_board), 6)
         if best_move[0] is None:
             break
         print(best_move)
