@@ -139,7 +139,7 @@ def right(board):
 
     return board, total_score
 
-def do_move_if_legal(board, move, spawn=True):
+def do_move_if_legal(board, move, spawn=False):
     b = board.copy()
 
     b, gained = move(b)

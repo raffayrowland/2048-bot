@@ -14,17 +14,14 @@ def highest_in_corner(board):
 
     return False
 
-def snake_pattern(board, weights=None):
-    if weights is None:
-        weights = [
-            0, 0, 0, 0,
-            2, 1, 0, 0,
-            9, 10, 12, 15,
-            50, 35, 25, 20,
-        ]
-
+def snake_pattern(board, weights):
     return sum(w * v for w, v in zip(weights, board))
 
+def get_max_possible_snake(board):
+    sorted_weights = [512, 256, 128, 64, 32, 16, 8, 4, 2, 0, 0, 0, 0, 0, 0, 0]
+    sorted_board = (sorted(board, reverse=True))
+
+    return sum(w * v for w, v in zip(sorted_weights, sorted_board))
 
 def count_empty_spaces(board):
     space_count = 0
@@ -33,12 +30,6 @@ def count_empty_spaces(board):
             space_count += 1
 
     return space_count
-
-def bottom_row_full(board):
-    if 0 in board[12:]:
-        return False
-
-    return True
 
 def evaluate_board(board):
     score = 0
@@ -50,13 +41,14 @@ def evaluate_board(board):
     ]
 
     spaces = count_empty_spaces(board)
-    snake = snake_pattern(board, weights)
-    highest_corner = highest_in_corner(board)
-    # full_bottom_row = bottom_row_full(board)
 
-    score += snake * 0.1
-    score += spaces * 20
-    score += 300 if highest_corner else 0
-    # score += 2000 if full_bottom_row else 0
+    max_possible_snake_score = get_max_possible_snake(board)
+    snake = snake_pattern(board, weights) / max_possible_snake_score
+
+    highest_corner = highest_in_corner(board)
+
+    score += snake * 15
+    score += spaces * 1
+    score += 30 if highest_corner else 0
 
     return score

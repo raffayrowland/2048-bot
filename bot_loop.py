@@ -67,6 +67,11 @@ def get_best_player_move(state, depth):
     if board_key in best_cache:
         return best_cache[board_key]
 
+    if depth == 0:
+        out = (None, evaluate_board(state[1]))
+        best_cache[board_key] = out
+        return out
+
     post_move_boards = get_boards_after_possible_moves(state[1])
 
     if not post_move_boards:
@@ -81,7 +86,7 @@ def get_best_player_move(state, depth):
     }
 
     for move_idx, board in post_move_boards:
-        worst_case = get_worst_spawn((move_idx, board), depth - 1) if depth > 0 else get_worst_spawn((move_idx, board), 0)
+        worst_case = get_worst_spawn((move_idx, board), depth)
         worst_case_spawn_scores[move_idx] = worst_case[2]
 
     possible_moves = [(k, v) for k, v in worst_case_spawn_scores.items() if v is not None]
@@ -146,7 +151,7 @@ if __name__ == "__main__":
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_player_move((None, play_board), 6)
+        best_move = get_best_player_move((None, play_board), 4)
         if best_move[0] is None:
             break
         print(best_move)
