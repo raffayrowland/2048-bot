@@ -2,7 +2,6 @@ import json
 import tkinter as tk
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 MOVE_CODE_TO_NAME = {
     0: "left",
@@ -44,45 +43,70 @@ TEXT_COLORS = {
 @dataclass
 class GameRecorder:
     path: Path
-    data: dict[str, Any]
+    initial_board: list[int]
+    initial_score: int = 0
+    _file: object | None = None
+    _has_steps: bool = False
+    _closed: bool = False
+    _tail: str = "]}\n"
+
+    def __post_init__(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._file = self.path.open("w", encoding="utf-8")
+        self._file.write('{"version":1,"initial_board":')
+        self._file.write(json.dumps(list(self.initial_board), separators=(",", ":")))
+        self._file.write(f',"initial_score":{int(self.initial_score)},"steps":[')
+        self._file.write(self._tail)
+        self._file.flush()
 
     def append_step(self, move: int | str, board: list[int], score: int) -> None:
-        self.data["steps"].append(
-            {
-                "move": normalize_move(move),
-                "board": list(board),
-                "score": int(score),
-            }
-        )
+        if self._closed or self._file is None:
+            raise RuntimeError("Cannot append step to a closed recorder.")
 
-    def save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("w", encoding="utf-8") as f:
-            json.dump(self.data, f, indent=2)
+        # Overwrite the closing tail, append the new step, then restore the tail.
+        self._file.seek(0, 2)
+        end = self._file.tell()
+        self._file.seek(end - len(self._tail))
+
+        if self._has_steps:
+            self._file.write(",")
+
+        self._file.write(
+            json.dumps(
+                {
+                    "move": normalize_move(move),
+                    "board": list(board),
+                    "score": int(score),
+                },
+                separators=(",", ":"),
+            )
+        )
+        self._file.write(self._tail)
+        self._has_steps = True
+        self._file.flush()
+
+    def finish(self) -> None:
+        if self._closed or self._file is None:
+            return
+        self._file.close()
+        self._closed = True
 
 
 # -------------------- Recording API --------------------
 def start_game_record(path: str | Path, initial_board: list[int], initial_score: int = 0) -> GameRecorder:
-    recorder = GameRecorder(
+    return GameRecorder(
         path=Path(path),
-        data={
-            "version": 1,
-            "initial_board": list(initial_board),
-            "initial_score": int(initial_score),
-            "steps": [],
-        },
+        initial_board=list(initial_board),
+        initial_score=int(initial_score),
     )
-    recorder.save()
-    return recorder
 
 
 def record_game_step(recorder: GameRecorder, move: int | str, board_after_spawn: list[int], score: int) -> None:
-    recorder.append_step(move, list(board_after_spawn), int(score))
-    recorder.save()
+    recorder.append_step(move, board_after_spawn, score)
 
 
 def finish_game_record(recorder: GameRecorder) -> None:
-    recorder.save()
+    recorder.finish()
 
 
 # -------------------- Replay GUI --------------------

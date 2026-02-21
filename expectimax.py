@@ -3,13 +3,6 @@ from board_score import evaluate_board
 from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
 from collections import OrderedDict
 
-test_board = [
-    0, 0, 2, 0,
-    0, 0, 2, 0,
-    0, 0, 0, 0,
-    0, 4, 0, 0,
-]
-
 MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
 MAX_CACHE_SIZE = 1_000_000
@@ -134,7 +127,7 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 3)[0]
+        best_move = get_best_move(play_board, 2)[0]
         if best_move is None:
             break
 
