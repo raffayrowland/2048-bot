@@ -1,9 +1,7 @@
 import random
 
-left_cache = {}
-right_cache = {}
-up_cache = {}
-down_cache = {}
+left_or_up_cache = {}
+right_or_down_cache = {}
 
 def get_zeros_location(board):
     zeros = []
@@ -28,169 +26,104 @@ def draw_board(board, score=0):
 
     print()
 
-def move_row_left(board, row): # for top row, row=0. Second row=1 etc
-    # leftmost and rightmost side of the row
-    row_idx = row * 4
-    row_end = row_idx + 4
+def move_row_left_or_up(row):
+    row_key = tuple(row)
+    if row_key in left_or_up_cache:
+        return left_or_up_cache[row_key]
 
-    row_key = tuple(board[row_idx:row_end])
-    cached = left_cache.get(row_key)
-    if cached is not None:
-        new_row, score = cached
-        board[row_idx:row_end] = new_row
-        return board, score
-
+    non_zeros = [x for x in row if x != 0]
+    new_row = []
     score = 0
 
-    non_zero_values = [x for x in board[row_idx:row_end] if x != 0]  # Gather nonzero values
-    board[row_idx:row_end] = non_zero_values + [0] * (4 - len(non_zero_values))  # put nonzero values to the left, and make up the difference with 0s
-
-    # combine numbers that are the same
-    for i in range(row_idx, row_end - 1):
-        if board[i] == board[i + 1] and board[i] != 0:
-            board[i] = board[i] * 2
-            score += board[i]
-            board[i + 1:row_end] = board[i + 2: row_end] + [0]  # shift the right side of the row left
-
-    left_cache[row_key] = (tuple(board[row_idx:row_end]), score)
-    return board, score
-
-def move_row_right(board, row):
-    # leftmost and rightmost side of the row
-    row_idx = row * 4
-    row_end = row_idx + 4
-
-    row_key = tuple(board[row_idx:row_end])
-    cached = right_cache.get(row_key)
-    if cached is not None:
-        new_row, score = cached
-        board[row_idx:row_end] = new_row
-        return board, score
-
-    score = 0
-
-    non_zero_values = [x for x in board[row_idx:row_end] if x != 0]  # Gather nonzero values
-    board[row_idx:row_end] = [0] * (4 - len(non_zero_values)) + non_zero_values  # pad with 0s and put nonzeros to the right
-
-    # combine numbers that are the same
-    for i in range(row_end - 1, row_idx, -1):
-        if board[i] == board[i - 1] and board[i] != 0:
-            board[i] = board[i] * 2
-            score += board[i]
-            board[row_idx:i] = [0] + board[row_idx:i - 1]  # shift left side of the row right
-
-    right_cache[row_key] = (tuple(board[row_idx:row_end]), score)
-    return board, score
-
-def move_column_up(board, column):  # Left column=0, middle left = 1 etc.
-    non_zero_values = [board[x] for x in range(column, column + 13, 4) if board[x] != 0]  # Gather nonzero values
-
-    column_key = tuple(non_zero_values)
-    cached = up_cache.get(column_key)
-    if cached is not None:
-        new_column, score = cached
-        i = 0
-        for j in range(column, column + 13, 4):
-            board[j] = new_column[i]
-            i += 1
-
-        return board, score
-
-    score = 0
-
-    # Shift the nonzero values to the top.
-    for i in range(column, column + 13, 4):
-        if non_zero_values:
-            board[i] = non_zero_values[0]
-            non_zero_values = non_zero_values[1:]
+    while len(non_zeros) > 0:
+        if len(non_zeros) > 1 and non_zeros[0] == non_zeros[1]:
+            new_row = new_row + [non_zeros[0] * 2]
+            score += non_zeros[0]
+            non_zeros = non_zeros[2:]
 
         else:
-            board[i] = 0  # When we run out of non zeros, populate the rest with 0s
+            new_row = new_row + [non_zeros[0]]
+            non_zeros = non_zeros[1:]
 
-    # Merge tiles that are the same and adjacent
-    for i in range(column, column + 9, 4):
-        if board[i] == board[i + 4] and board[i] != 0:
-            board[i] = board[i] * 2  # Double the tile that has been merged
-            score += board[i]
-            for j in range(i + 4, column + 9, 4):  # Shift the rest up
-                board[j] = board[j + 4]
-            board[column + 12] = 0
+    new_row = new_row + [0] * (4 - len(new_row))
 
-    new_column = [board[x] for x in range(column, column + 13, 4)]
-    up_cache[column_key] = (new_column, score)
+    left_or_up_cache[row_key] = (new_row, score)
+    return new_row, score
 
-    return board, score
+def move_row_right_or_down(row):
+    row_key = tuple(row)
+    if row_key in right_or_down_cache:
+        return right_or_down_cache[row_key]
 
-def move_column_down(board, column):
-    non_zero_values = [board[x] for x in range(column + 12, column - 1, -4) if board[x] != 0]  # Gather nonzero values
-
-    column_key = tuple(non_zero_values)
-    cached = down_cache.get(column_key)
-    if cached is not None:
-        new_column, score = cached
-        i = 0
-        for j in range(column + 12, column - 1, -4):
-            board[j] = new_column[i]
-            i += 1
-
-        return board, score
-
+    non_zeros = [x for x in row if x != 0]
+    new_row = []
     score = 0
 
-    # Shift the nonzero values to the bottom
-    for i in range(column + 12, column - 1, -4):
-        if non_zero_values:
-            board[i] = non_zero_values[0]  # Pop the next nonzero
-            non_zero_values = non_zero_values[1:]
+    i = len(non_zeros) - 1
+    while len(non_zeros) > 0:
+        if i != 0 and non_zeros[i] == non_zeros[i - 1]:
+            new_row = [non_zeros[i] * 2] + new_row
+            score += non_zeros[i]
+            non_zeros = non_zeros[:-2]
+            i -= 2
 
         else:
-            board[i] = 0
+            new_row = [non_zeros[i]] + new_row
+            non_zeros = non_zeros[:-1]
+            i -= 1
 
-    # Merge tiles that are the same and adjacent
-    for i in range(column + 12, column, -4):
-        if board[i] == board[i - 4] and board[i] != 0:  # If the tiles are the same, merge them
-            board[i] = board[i] * 2
-            score += board[i]
-            for j in range(i - 4, column, -4):  # Shift the rest of them down
-                board[j] = board[j - 4]
-            board[column] = 0
+    new_row = [0] * (4 - len(new_row)) + new_row
 
-    new_column = [board[x] for x in range(column + 12, column - 1, -4)]
-    down_cache[column_key] = (new_column, score)
-
-    return board, score
+    right_or_down_cache[row_key] = (new_row, score)
+    return new_row, score
 
 def up(board):
     total_score = 0
-    for i in range(4):
-        board, score = move_column_up(board, i)
-        total_score += score
+    new_board = [0] * 16
 
-    return board, total_score
+    for i in range(4):
+        row = [board[x] for x in range(i, i + 16, 4)]
+        new_row, score = move_row_left_or_up(row)
+        total_score += score
+        for j in range(i, i + 16, 4):
+            new_board[j] = new_row[j // 4]
+
+    return new_board, total_score
 
 def down(board):
     total_score = 0
-    for i in range(4):
-        board, score = move_column_down(board, i)
-        total_score += score
+    new_board = [0] * 16
 
-    return board, total_score
+    for i in range(4):
+        row = [board[x] for x in range(i, i + 16, 4)]
+        new_row, score = move_row_right_or_down(row)
+        total_score += score
+        for j in range(i, i + 16, 4):
+            new_board[j] = new_row[j // 4]
+
+    return new_board, total_score
 
 def left(board):
     total_score = 0
+    new_board = []
     for i in range(4):
-        board, score = move_row_left(board, i)
+        row = board[i * 4:i * 4 + 4]
+        new_row, score = move_row_left_or_up(row)
+        new_board += new_row
         total_score += score
 
-    return board, total_score
+    return new_board, total_score
 
 def right(board):
     total_score = 0
+    new_board = []
     for i in range(4):
-        board, score = move_row_right(board, i)
+        row = board[i * 4:i * 4 + 4]
+        new_row, score = move_row_right_or_down(row)
+        new_board += new_row
         total_score += score
 
-    return board, total_score
+    return new_board, total_score
 
 def do_move_if_legal(board, move, spawn=False):
     b = board.copy()
