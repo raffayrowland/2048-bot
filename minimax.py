@@ -3,13 +3,6 @@ from board_score import evaluate_board
 from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
 from collections import OrderedDict
 
-testing_board = [
-    0, 0, 0, 0,
-    0, 0, 2, 0,
-    8, 0, 0, 0,
-    0, 0, 4, 0
-]
-
 MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
 MAX_CACHE_SIZE = 1_000_000
