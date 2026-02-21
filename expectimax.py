@@ -1,4 +1,4 @@
-from board import draw_board, start_game, is_game_over, get_zeros_location, do_move_if_legal, left, right, up, down
+from board import *
 from board_score import evaluate_board
 from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
 from collections import OrderedDict
@@ -19,15 +19,23 @@ spawn_cache = OrderedDict()
 def clear_cache():
     global move_cache
     global spawn_cache
-    print(f"Best cache size: {len(move_cache)}, Worst cache size: {len(spawn_cache)}")
 
-    overflow = len(move_cache) - MAX_CACHE_SIZE
-    for _ in range(max(0, overflow)):
-        move_cache.popitem(last=False)
+    caches = [move_cache, spawn_cache, left_cache, right_cache, up_cache, down_cache]
 
-    overflow = len(spawn_cache) - MAX_CACHE_SIZE
-    for _ in range(max(0, overflow)):
-        spawn_cache.popitem(last=False)
+    print(
+        f"""Best cache size: {len(move_cache)}, 
+Worst cache size: {len(spawn_cache)}
+Left cache size: {len(left_cache)}
+Right cache size: {len(right_cache)}
+Up cache size: {len(up_cache)}
+Down cache size: {len(down_cache)}"""
+          )
+
+    for cache in caches:
+        overflow = len(cache) - MAX_CACHE_SIZE
+        for _ in range(max(0, overflow)):
+            cache.popitem(last=False)
+
 
 def generate_all_spawns(board):
     possible_spawns = []
@@ -50,7 +58,7 @@ def generate_boards_after_possible_moves(board):
     new_boards = []
 
     for move in MOVES:
-        changed, new_board, _ = do_move_if_legal(board.copy(), move[1], spawn=False)
+        changed, new_board, _ = do_move_if_legal(board, move[1], spawn=False)
         if changed:
             new_boards.append((move[0], new_board))
 
@@ -126,11 +134,10 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 3)[0]
+        best_move = get_best_move(play_board, 4)[0]
         if best_move is None:
             break
 
-        print(best_move)
         _, play_board, score = do_move_if_legal(play_board, MOVES[best_move][1], spawn=True)
         total_score += score
 
@@ -138,7 +145,7 @@ if __name__ == '__main__':
 
         draw_board(play_board, total_score)
         evaluate_board(play_board, prints=True)
-        print()
+        print("-----------------------------")
         clear_cache()
 
     finish_game_record(rec)

@@ -1,5 +1,10 @@
 import random
 
+left_cache = {}
+right_cache = {}
+up_cache = {}
+down_cache = {}
+
 def get_zeros_location(board):
     zeros = []
     for i in range(16):
@@ -27,6 +32,14 @@ def move_row_left(board, row): # for top row, row=0. Second row=1 etc
     # leftmost and rightmost side of the row
     row_idx = row * 4
     row_end = row_idx + 4
+
+    row_key = tuple(board[row_idx:row_end])
+    cached = left_cache.get(row_key)
+    if cached is not None:
+        new_row, score = cached
+        board[row_idx:row_end] = new_row
+        return board, score
+
     score = 0
 
     non_zero_values = [x for x in board[row_idx:row_end] if x != 0]  # Gather nonzero values
@@ -39,12 +52,21 @@ def move_row_left(board, row): # for top row, row=0. Second row=1 etc
             score += board[i]
             board[i + 1:row_end] = board[i + 2: row_end] + [0]  # shift the right side of the row left
 
+    left_cache[row_key] = (tuple(board[row_idx:row_end]), score)
     return board, score
 
 def move_row_right(board, row):
     # leftmost and rightmost side of the row
     row_idx = row * 4
     row_end = row_idx + 4
+
+    row_key = tuple(board[row_idx:row_end])
+    cached = right_cache.get(row_key)
+    if cached is not None:
+        new_row, score = cached
+        board[row_idx:row_end] = new_row
+        return board, score
+
     score = 0
 
     non_zero_values = [x for x in board[row_idx:row_end] if x != 0]  # Gather nonzero values
@@ -57,11 +79,24 @@ def move_row_right(board, row):
             score += board[i]
             board[row_idx:i] = [0] + board[row_idx:i - 1]  # shift left side of the row right
 
+    right_cache[row_key] = (tuple(board[row_idx:row_end]), score)
     return board, score
 
 def move_column_up(board, column):  # Left column=0, middle left = 1 etc.
-    score = 0
     non_zero_values = [board[x] for x in range(column, column + 13, 4) if board[x] != 0]  # Gather nonzero values
+
+    column_key = tuple(non_zero_values)
+    cached = up_cache.get(column_key)
+    if cached is not None:
+        new_column, score = cached
+        i = 0
+        for j in range(column, column + 13, 4):
+            board[j] = new_column[i]
+            i += 1
+
+        return board, score
+
+    score = 0
 
     # Shift the nonzero values to the top.
     for i in range(column, column + 13, 4):
@@ -81,11 +116,26 @@ def move_column_up(board, column):  # Left column=0, middle left = 1 etc.
                 board[j] = board[j + 4]
             board[column + 12] = 0
 
+    new_column = [board[x] for x in range(column, column + 13, 4)]
+    up_cache[column_key] = (new_column, score)
+
     return board, score
 
 def move_column_down(board, column):
-    score = 0
     non_zero_values = [board[x] for x in range(column + 12, column - 1, -4) if board[x] != 0]  # Gather nonzero values
+
+    column_key = tuple(non_zero_values)
+    cached = down_cache.get(column_key)
+    if cached is not None:
+        new_column, score = cached
+        i = 0
+        for j in range(column + 12, column - 1, -4):
+            board[j] = new_column[i]
+            i += 1
+
+        return board, score
+
+    score = 0
 
     # Shift the nonzero values to the bottom
     for i in range(column + 12, column - 1, -4):
@@ -104,6 +154,9 @@ def move_column_down(board, column):
             for j in range(i - 4, column, -4):  # Shift the rest of them down
                 board[j] = board[j - 4]
             board[column] = 0
+
+    new_column = [board[x] for x in range(column + 12, column - 1, -4)]
+    down_cache[column_key] = (new_column, score)
 
     return board, score
 
