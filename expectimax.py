@@ -134,7 +134,7 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 4)[0]
+        best_move = get_best_move(play_board, 3)[0]
         if best_move is None:
             break
 
