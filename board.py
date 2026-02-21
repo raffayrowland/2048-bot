@@ -88,7 +88,8 @@ def up(board):
         for j in range(i, i + 16, 4):
             new_board[j] = new_row[j // 4]
 
-    return new_board, total_score
+    changed = (board != new_board)
+    return changed, new_board, total_score
 
 def down(board):
     total_score = 0
@@ -101,7 +102,8 @@ def down(board):
         for j in range(i, i + 16, 4):
             new_board[j] = new_row[j // 4]
 
-    return new_board, total_score
+    changed = (board != new_board)
+    return changed, new_board, total_score
 
 def left(board):
     total_score = 0
@@ -112,7 +114,8 @@ def left(board):
         new_board += new_row
         total_score += score
 
-    return new_board, total_score
+    changed = (board != new_board)
+    return changed, new_board, total_score
 
 def right(board):
     total_score = 0
@@ -123,13 +126,11 @@ def right(board):
         new_board += new_row
         total_score += score
 
-    return new_board, total_score
+    changed = (board != new_board)
+    return changed, new_board, total_score
 
 def do_move_if_legal(board, move, spawn=False):
-    b = board.copy()
-
-    b, gained = move(b)
-    changed = b != board
+    changed, b, gained = move(board)
 
     if changed:
         if spawn:
@@ -142,12 +143,12 @@ def is_game_over(board):
     if 0 in board:
         return False
     for move in (up, down, left, right):
-        starting_board = board.copy()
-        move(starting_board)
-        if starting_board != board:
+        changed, _, _ = do_move_if_legal(board, move)
+        if changed:
             return False
 
     return True
+
 
 def start_game():
     board = [

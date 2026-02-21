@@ -13,15 +13,13 @@ def clear_cache():
     global move_cache
     global spawn_cache
 
-    caches = [move_cache, spawn_cache, left_cache, right_cache, up_cache, down_cache]
+    caches = [move_cache, spawn_cache, left_or_up_cache, right_or_down_cache]
 
     print(
         f"""Best cache size: {len(move_cache)}, 
 Worst cache size: {len(spawn_cache)}
-Left cache size: {len(left_cache)}
-Right cache size: {len(right_cache)}
-Up cache size: {len(up_cache)}
-Down cache size: {len(down_cache)}"""
+Left cache size: {len(left_or_up_cache)}
+Right cache size: {len(right_or_down_cache)}"""
           )
 
     for cache in caches:
@@ -127,7 +125,7 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 2)[0]
+        best_move = get_best_move(play_board, 4)[0]
         if best_move is None:
             break
 
@@ -138,7 +136,7 @@ if __name__ == '__main__':
 
         draw_board(play_board, total_score)
         evaluate_board(play_board, prints=True)
-        print("-----------------------------")
+        print("\n-----------------------------\n")
         clear_cache()
 
     finish_game_record(rec)
