@@ -38,7 +38,7 @@ def move_row_left_or_up(row):
     while len(non_zeros) > 0:
         if len(non_zeros) > 1 and non_zeros[0] == non_zeros[1]:
             new_row = new_row + [non_zeros[0] * 2]
-            score += non_zeros[0]
+            score += non_zeros[0] * 2
             non_zeros = non_zeros[2:]
 
         else:
@@ -63,7 +63,7 @@ def move_row_right_or_down(row):
     while len(non_zeros) > 0:
         if i != 0 and non_zeros[i] == non_zeros[i - 1]:
             new_row = [non_zeros[i] * 2] + new_row
-            score += non_zeros[i]
+            score += non_zeros[i] * 2
             non_zeros = non_zeros[:-2]
             i -= 2
 
