@@ -38,8 +38,8 @@ def generate_all_spawns(board):
     for zero in zeros:
         b2 = board.copy()
         b4 = board.copy()
-        b2[zero] = 2
-        b4[zero] = 4
+        b2[zero] = 1
+        b4[zero] = 2
         possible_spawns.append((b2, p2))
         possible_spawns.append((b4, p4))
 

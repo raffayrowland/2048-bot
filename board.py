@@ -14,13 +14,19 @@ def get_zeros_location(board):
 def spawn_random_tile(board, zeros):
     index = random.randint(0, len(zeros) - 1)  # choose random zero
     tile_value = random.randint(1, 10) # 90% chance value is a 2
-    board[zeros[index]] = 4 if tile_value == 1 else 2
+    board[zeros[index]] = 2 if tile_value == 1 else 1
     return board
 
 def draw_board(board, score=0):
     print(f"Score: {score}")
     for i in range(len(board)):
-        print(board[i], " " * (5 - len(str(board[i]))), end=' ')
+        if board[i] == 0:
+            print(board[i], " " * (5 - len(str(board[i]))), end=' ')
+            if (i + 1) % 4 == 0:  # newline every 4 numbers
+                print()
+            continue
+
+        print(2 ** board[i], " " * (5 - len(str(2 ** board[i]))), end=' ')
         if (i + 1) % 4 == 0:  # newline every 4 numbers
             print()
 
@@ -37,8 +43,8 @@ def move_row_left_or_up(row):
 
     while len(non_zeros) > 0:
         if len(non_zeros) > 1 and non_zeros[0] == non_zeros[1]:
-            new_row = new_row + [non_zeros[0] * 2]
-            score += non_zeros[0] * 2
+            new_row = new_row + [non_zeros[0] + 1]
+            score += 2 ** (non_zeros[0] + 1)
             non_zeros = non_zeros[2:]
 
         else:
@@ -62,8 +68,8 @@ def move_row_right_or_down(row):
     i = len(non_zeros) - 1
     while len(non_zeros) > 0:
         if i != 0 and non_zeros[i] == non_zeros[i - 1]:
-            new_row = [non_zeros[i] * 2] + new_row
-            score += non_zeros[i] * 2
+            new_row = [non_zeros[i] + 1] + new_row
+            score += 2 ** (non_zeros[i] + 1)
             non_zeros = non_zeros[:-2]
             i -= 2
 

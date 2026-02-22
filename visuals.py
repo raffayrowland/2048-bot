@@ -110,13 +110,23 @@ def finish_game_record(recorder: GameRecorder) -> None:
 
 
 # -------------------- Replay GUI --------------------
-def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, size: int = 520) -> None:
+def replay_recording(
+    path: str | Path,
+    anim_ms: int = 150,
+    pause_ms: int = 80,
+    size: int = 520,
+    replay_speed: float = 1.5,
+) -> None:
     with Path(path).open("r", encoding="utf-8") as f:
         data = json.load(f)
 
     initial_board = data["initial_board"]
     initial_score = int(data.get("initial_score", 0))
     steps = data.get("steps", [])
+    speed = max(0.1, float(replay_speed))
+    effective_anim_ms = max(1, int(anim_ms / speed))
+    effective_pause_ms = max(1, int(pause_ms / speed))
+    spawn_frame_ms = max(1, int(16 / speed))
 
     root = tk.Tk()
     root.title("2048 Replay")
@@ -147,6 +157,11 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
         y = pad + r * (tile_px + gap)
         return x, y
 
+    def exponent_to_tile_value(exponent: int) -> int:
+        if exponent <= 0:
+            return 0
+        return 1 << exponent
+
     def tile_style(value: int) -> tuple[str, str]:
         bg = TILE_COLORS.get(value, "#3c3a32")
         fg = TEXT_COLORS["dark"] if value <= 4 else TEXT_COLORS["light"]
@@ -160,9 +175,10 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
     def draw_board_state(board: list[int], spawn_idx: int | None = None, spawn_scale: float = 1.0) -> None:
         canvas.delete("all")
         draw_static_grid()
-        for idx, value in enumerate(board):
-            if value == 0:
+        for idx, exponent in enumerate(board):
+            if exponent == 0:
                 continue
+            value = exponent_to_tile_value(exponent)
             x, y = cell_xy(idx)
             w = tile_px
             h = tile_px
@@ -194,7 +210,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
         return [line + 4 * r for r in range(3, -1, -1)]
 
     def transitions_for_line(values: list[int]) -> tuple[list[tuple[int, int, int]], list[int]]:
-        # Returns (source_pos, target_pos, tile_value_before_move) and final values.
+        # Returns (source_pos, target_pos, tile_exponent_before_move) and final exponents.
         non_zero = [(i, v) for i, v in enumerate(values) if v != 0]
         moves: list[tuple[int, int, int]] = []
         out = [0, 0, 0, 0]
@@ -207,7 +223,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
                 src_j, _ = non_zero[i + 1]
                 moves.append((src_i, target, val))
                 moves.append((src_j, target, val))
-                out[target] = val * 2
+                out[target] = val + 1
                 i += 2
             else:
                 moves.append((src_i, target, val))
@@ -234,7 +250,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
 
     def spawn_index(before_spawn: list[int], after_spawn: list[int]) -> int | None:
         for i in range(16):
-            if before_spawn[i] == 0 and after_spawn[i] in (2, 4):
+            if before_spawn[i] == 0 and after_spawn[i] in (1, 2):
                 return i
         return None
 
@@ -247,12 +263,20 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
     paused = False
     animating = False
     queued_after: str | None = None
+    right_held = False
+    right_hold_job: str | None = None
 
     def cancel_queued() -> None:
         nonlocal queued_after
         if queued_after is not None:
             root.after_cancel(queued_after)
             queued_after = None
+
+    def cancel_right_hold() -> None:
+        nonlocal right_hold_job
+        if right_hold_job is not None:
+            root.after_cancel(right_hold_job)
+            right_hold_job = None
 
     def set_status_text() -> None:
         score = states[current_step][1]
@@ -274,7 +298,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
         cancel_queued()
         if paused or animating or current_step >= len(steps):
             return
-        queued_after = root.after(pause_ms, lambda: play_step(current_step, keep_paused=False))
+        queued_after = root.after(effective_pause_ms, lambda: play_step(current_step, keep_paused=False))
 
     def play_step(step_index: int, keep_paused: bool) -> None:
         nonlocal current_step, animating, paused, queued_after
@@ -296,7 +320,8 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
         draw_static_grid()
 
         # Draw moving tiles using pre-move tile values.
-        for src_idx, _, value in movements:
+        for src_idx, _, exponent in movements:
+            value = exponent_to_tile_value(exponent)
             x, y = cell_xy(src_idx)
             bg, fg = tile_style(value)
             rect = canvas.create_rectangle(x, y, x + tile_px, y + tile_px, fill=bg, width=0)
@@ -310,7 +335,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
             )
             tile_items.append((rect, text))
 
-        frames = max(6, anim_ms // 16)
+        frames = max(6, effective_anim_ms // 16)
 
         def finalize_step() -> None:
             nonlocal current_step, animating, paused
@@ -337,7 +362,7 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
                 canvas.coords(text, x + tile_px / 2, y + tile_px / 2)
 
             if frame < frames:
-                queued_after = root.after(max(1, anim_ms // frames), lambda: animate_frame(frame + 1))
+                queued_after = root.after(max(1, effective_anim_ms // frames), lambda: animate_frame(frame + 1))
                 return
 
             s_idx = spawn_index(shifted, next_board)
@@ -352,13 +377,27 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
                 scale = 0.65 + 0.35 * (pop_frame / pop_frames)
                 draw_board_state(next_board, spawn_idx=s_idx, spawn_scale=scale)
                 if pop_frame < pop_frames:
-                    queued_after = root.after(16, lambda: animate_spawn_pop(pop_frame + 1))
+                    queued_after = root.after(spawn_frame_ms, lambda: animate_spawn_pop(pop_frame + 1))
                 else:
                     finalize_step()
 
             animate_spawn_pop(0)
 
         animate_frame(0)
+
+    def advance_paused_without_animation(steps_to_advance: int = 1) -> None:
+        nonlocal current_step
+        if animating or not paused:
+            return
+        cancel_queued()
+        advanced = False
+        for _ in range(steps_to_advance):
+            if current_step >= len(steps):
+                break
+            current_step += 1
+            advanced = True
+        if advanced:
+            show_current_board()
 
     def on_key(event: tk.Event) -> None:
         nonlocal paused, current_step
@@ -378,13 +417,34 @@ def replay_recording(path: str | Path, anim_ms: int = 150, pause_ms: int = 80, s
                 show_current_board()
             return
 
-        if key == "Right":
-            if paused and not animating and current_step < len(steps):
-                play_step(current_step, keep_paused=True)
+    def on_right_press(_: tk.Event) -> None:
+        nonlocal right_held, right_hold_job
+        if not paused:
+            return
+        if not right_held:
+            right_held = True
+            advance_paused_without_animation(1)
+
+            def repeat_fast_forward() -> None:
+                nonlocal right_hold_job
+                if not right_held or not paused:
+                    right_hold_job = None
+                    return
+                advance_paused_without_animation(1)
+                right_hold_job = root.after(20, repeat_fast_forward)
+
+            right_hold_job = root.after(120, repeat_fast_forward)
+
+    def on_right_release(_: tk.Event) -> None:
+        nonlocal right_held
+        right_held = False
+        cancel_right_hold()
 
     draw_board_state(initial_board)
     set_status_text()
     root.bind("<KeyPress>", on_key)
+    root.bind("<KeyPress-Right>", on_right_press)
+    root.bind("<KeyRelease-Right>", on_right_release)
     root.after(100, maybe_schedule_next)
     root.mainloop()
 

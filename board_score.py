@@ -12,7 +12,7 @@ def evaluate_board(board, prints=False):
     max_tile = 0
 
     for i in range(16):
-        snake_score += WEIGHTS[i] * board[i]
+        snake_score += WEIGHTS[i] * (2 ** board[i])
 
         if max_tile < board[i]:
             max_tile = board[i]

@@ -30,8 +30,8 @@ def generate_all_spawns(state):
     for zero in zeros:
         b2 = state[1].copy()
         b4 = state[1].copy()
-        b2[zero] = 2
-        b4[zero] = 4
+        b2[zero] = 1
+        b4[zero] = 2
         possible_spawns.append((state[0], b2))
         possible_spawns.append((state[0], b4))
 
