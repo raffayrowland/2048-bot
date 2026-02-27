@@ -2,16 +2,28 @@ from dataclasses import dataclass
 from typing import Tuple
 
 DEFAULT_WEIGHTS = [
-    874, 486, 883, 66,
-    305, 269, 401, 221,
-    190, 286, 631, 337,
-    470, 215, 173, 468,
-]
+    923.3489108762112,
+    369.9723326920124,
+    509.63565361370956,
+    187.41351997836804,
+    774.3004822322991,
+    409.74197276751255,
+    249.7571272050992,
+    448.3835916795614,
+    711.358567227876,
+    212.05068823645746,
+    680.160777814878,
+    432.0734322906679,
+    670.6365582728158,
+    452.0054352438986,
+    128.87927579615751,
+    423.80351527914377
+  ]
 
 @dataclass(frozen=True)
 class EvalParams:
-    max_corner_reward: float = 0.45
-    space_count_reward: float = 0.59
+    max_corner_reward: float = 0.2680921366073329
+    space_count_reward: float = 0.8681930859481921
     weights: Tuple[float, ...] = tuple(DEFAULT_WEIGHTS)
 
     def __post_init__(self):

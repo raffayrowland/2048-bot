@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
-MAX_CACHE_SIZE = 10_000_000
+MAX_CACHE_SIZE = 100_000
 move_cache = OrderedDict()
 spawn_cache = OrderedDict()
 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 1, default_params)[0]
+        best_move = get_best_move(play_board, 3, default_params)[0]
         if best_move is None:
             break
 
@@ -152,7 +152,7 @@ if __name__ == '__main__':
         record_game_step(rec, best_move, play_board, total_score)
 
         draw_board(play_board, total_score)
-        evaluate_board(play_board, prints=True)
+        evaluate_board(play_board, prints=False)
         print("\n-----------------------------\n")
         clear_cache()
 
