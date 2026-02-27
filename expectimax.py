@@ -1,26 +1,27 @@
 from board import *
-from board_score import evaluate_board
+from board_score import evaluate_board, default_params
 from visuals import start_game_record, record_game_step, finish_game_record, replay_recording
 from collections import OrderedDict
 
 MOVES = [(0, left), (1, right), (2, down), (3, up)]
 
-MAX_CACHE_SIZE = 1_000_000
+MAX_CACHE_SIZE = 10_000_000
 move_cache = OrderedDict()
 spawn_cache = OrderedDict()
 
-def clear_cache():
+def clear_cache(prints=False):
     global move_cache
     global spawn_cache
 
     caches = [move_cache, spawn_cache, left_or_up_cache, right_or_down_cache]
 
-    print(
-        f"""Best cache size: {len(move_cache)}, 
-Worst cache size: {len(spawn_cache)}
-Left cache size: {len(left_or_up_cache)}
-Right cache size: {len(right_or_down_cache)}"""
-          )
+    if prints:
+        print(
+            f"""Move cache size: {len(move_cache)}, 
+    Spawn cache size: {len(spawn_cache)}
+    Left cache size: {len(left_or_up_cache)}
+    Right cache size: {len(right_or_down_cache)}"""
+              )
 
     for cache in caches:
         overflow = len(cache) - MAX_CACHE_SIZE
@@ -55,15 +56,15 @@ def generate_boards_after_possible_moves(board):
 
     return new_boards
 
-def get_weighted_spawns(board, depth):
-    board_key = (tuple(board), depth)
+def get_weighted_spawns(board, depth, params):
+    board_key = (tuple(board), depth, params)
     if board_key in spawn_cache:
         return spawn_cache[board_key]
 
     possible_spawns = generate_all_spawns(board)
 
     if not possible_spawns:
-        eval = evaluate_board(board)
+        eval = evaluate_board(board, params)
         spawn_cache[board_key] = eval
         return eval
 
@@ -71,21 +72,21 @@ def get_weighted_spawns(board, depth):
         cumulative_score = 0
 
         for position, p in possible_spawns:
-            cumulative_score += p * evaluate_board(position)
+            cumulative_score += p * evaluate_board(position, params)
 
         spawn_cache[board_key] = cumulative_score
         return cumulative_score
 
     cumulative_score = 0
     for position, p in possible_spawns:
-        _, next_value = get_best_move(position, depth - 1)
+        _, next_value = get_best_move(position, depth - 1, params)
         cumulative_score += p * next_value
 
     spawn_cache[board_key] = cumulative_score
     return cumulative_score
 
-def get_best_move(board, depth):
-    board_key = (tuple(board), depth)
+def get_best_move(board, depth, params):
+    board_key = (tuple(board), depth, params)
     if board_key in move_cache:
         return move_cache[board_key]
 
@@ -100,7 +101,7 @@ def get_best_move(board, depth):
         best = None
 
         for move_idx, position in boards_after_moves:
-            current_eval = evaluate_board(position)
+            current_eval = evaluate_board(position, params)
             if best is None or current_eval > best[1]:
                 best = (move_idx, current_eval)
 
@@ -110,12 +111,28 @@ def get_best_move(board, depth):
     best = None
 
     for move_idx, position in boards_after_moves:
-        eval = get_weighted_spawns(position, depth)
+        eval = get_weighted_spawns(position, depth, params)
         if best is None or eval > best[1]:
             best = (move_idx, eval)
 
     move_cache[board_key] = best
     return best
+
+def start_one_player(params, depth=2):
+    play_board = start_game()
+    total_score = 0
+
+    while not is_game_over(play_board):
+        best_move = get_best_move(play_board, depth, params)[0]
+        if best_move is None:
+            break
+
+        _, play_board, score = do_move_if_legal(play_board, MOVES[best_move][1], spawn=True)
+        total_score += score
+
+        clear_cache()
+
+    return total_score
 
 
 if __name__ == '__main__':
@@ -125,7 +142,7 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 4)[0]
+        best_move = get_best_move(play_board, 5, default_params)[0]
         if best_move is None:
             break
 
