@@ -18,9 +18,9 @@ def clear_cache(prints=False):
     if prints:
         print(
             f"""Move cache size: {len(move_cache)}, 
-    Spawn cache size: {len(spawn_cache)}
-    Left cache size: {len(left_or_up_cache)}
-    Right cache size: {len(right_or_down_cache)}"""
+Spawn cache size: {len(spawn_cache)}
+Left cache size: {len(left_or_up_cache)}
+Right cache size: {len(right_or_down_cache)}"""
               )
 
     for cache in caches:
@@ -152,9 +152,9 @@ if __name__ == '__main__':
         record_game_step(rec, best_move, play_board, total_score)
 
         draw_board(play_board, total_score)
-        evaluate_board(play_board, prints=False)
+        evaluate_board(play_board, prints=True)
         print("\n-----------------------------\n")
-        clear_cache()
+        clear_cache(prints=True)
 
     finish_game_record(rec)
     replay_recording("replays/latest_game.json")
