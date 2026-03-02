@@ -1,3 +1,4 @@
+import time
 from board_score import EvalParams
 from expectimax import start_one_player
 import json
@@ -6,21 +7,21 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from typing import Tuple, List
 
-# [max_corner_reward, space_count_reward, w0 ... w15]
+# [distance_penalty, space_count_reward, w0 ... w15]
 GENE_BOUNDS: List[Tuple[float, float]] = [
-    (0.0, 0.5),  # Max corner reward bound
-    (0.0, 2.0),  # Max space reward bound
+    (0.0, 100.0),  # Distance penalty bound
+    (0.0, 1.0),  # Max space reward bound
 ] + [(-32.0, 1024.0)] * 16  # Weight bounds
 
-POPULATION_SIZE = 25
-GENERATIONS = 10
-EPISODES_PER_FITNESS = 10
-SEARCH_DEPTH = 2
+POPULATION_SIZE = 40
+GENERATIONS = 70
+EPISODES_PER_FITNESS = 15
+SEARCH_DEPTH = 1
 ELITE_COUNT = 4
-TOURNAMENT_K = 3
-MUTATION_RATE = 0.15
+TOURNAMENT_K = 9
+MUTATION_RATE = 0.25
 MUTATION_STD_FRAC = 0.08
-MAX_PARALLEL_PLAYERS = 20
+MAX_PARALLEL_PLAYERS = 16
 
 def clamp(x, lo, hi):
     return max(lo, min(x, hi))
@@ -30,7 +31,7 @@ def random_chromosome():
 
 def chromosome_to_params(chromosome):
     params = EvalParams(
-        max_corner_reward=chromosome[0],
+        distance_penalty=chromosome[0],
         space_count_reward=chromosome[1],
         weights=tuple(chromosome[2:18]),
     )
@@ -82,11 +83,17 @@ def evolve():
     with ProcessPoolExecutor(max_workers=MAX_PARALLEL_PLAYERS) as executor:
         for gen in range(GENERATIONS):
             seeds = [10000 * gen + i for i in range(max(EPISODES_PER_FITNESS, 8))]
+
+            t0 = time.perf_counter()
+
             futures = [
                 executor.submit(fitness, chromosome, seeds, EPISODES_PER_FITNESS, SEARCH_DEPTH)
                 for chromosome in population
             ]
             scores = [future.result() for future in futures]
+
+            dt = time.perf_counter() - t0
+
             scored = list(zip(population, scores))
             scored.sort(key = lambda x: x[1], reverse = True)
 
@@ -95,7 +102,7 @@ def evolve():
                 goat_score = gen_best_score
                 goat = gen_best[:]
 
-            print(f"Gen {gen:03d} | best={gen_best_score:.2f} | global_best={goat_score:.2f}")
+            print(f"Gen {gen:03d} | eval_time={dt:.3f} | best={gen_best_score:.1f} | global_best={goat_score:.2f}")
 
             # Elitism
             next_population = [chrom[:] for chrom, _ in scored[:ELITE_COUNT]]
@@ -120,7 +127,7 @@ def evolve():
         json.dump(
             {
                 "fitness": goat_score,
-                "max_corner_reward": best_params.max_corner_reward,
+                "distance_penalty": best_params.distance_penalty,
                 "space_count_reward": best_params.space_count_reward,
                 "weights": list(best_params.weights),
             },
