@@ -13,8 +13,8 @@ GENE_BOUNDS: List[Tuple[float, float]] = [
     (0.0, 1.0),  # Max space reward bound
 ] + [(-32.0, 1024.0)] * 16  # Weight bounds
 
-POPULATION_SIZE = 40
-GENERATIONS = 70
+POPULATION_SIZE = 80
+GENERATIONS = 35
 EPISODES_PER_FITNESS = 15
 SEARCH_DEPTH = 1
 ELITE_COUNT = 4
@@ -119,7 +119,12 @@ def evolve():
 
     best_params = chromosome_to_params(goat)
     print("\nBest chromosome:", goat)
-    print("Best params:", best_params)
+    print(f"Best distance penalty: {best_params.distance_penalty}")
+    print(f"Best space count reward: {best_params.space_count_reward}")
+    for i in range(16):
+        print(f"{best_params.weights[i]:.0f}", end="  ")
+        if (i + 1) % 4 == 0:
+            print()
     print("Best fitness:", goat_score)
 
     os.makedirs("params", exist_ok=True)

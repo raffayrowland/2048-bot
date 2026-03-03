@@ -59,6 +59,7 @@ def generate_boards_after_possible_moves(board):
 def get_weighted_spawns(board, depth, params):
     board_key = (tuple(board), depth, params)
     if board_key in spawn_cache:
+        spawn_cache.move_to_end(board_key)
         return spawn_cache[board_key]
 
     possible_spawns = generate_all_spawns(board)
@@ -88,6 +89,7 @@ def get_weighted_spawns(board, depth, params):
 def get_best_move(board, depth, params):
     board_key = (tuple(board), depth, params)
     if board_key in move_cache:
+        move_cache.move_to_end(board_key)
         return move_cache[board_key]
 
     boards_after_moves = generate_boards_after_possible_moves(board)  # (move_idx, new_board)
