@@ -7,6 +7,9 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from typing import Tuple, List
 
+PARAMS_FILE_NAME = f"params/params{int(time.time())}.json"
+param_log = []
+
 # [distance_penalty, space_count_reward, w0 ... w15]
 GENE_BOUNDS: List[Tuple[float, float]] = [
     (0.0, 100.0),  # Distance penalty bound
@@ -102,6 +105,18 @@ def evolve():
                 goat_score = gen_best_score
                 goat = gen_best[:]
 
+            log_params = chromosome_to_params(gen_best)
+
+            param_log.append(
+                {
+                    "generation": gen,
+                    "fitness": gen_best_score,
+                    "distance_penalty": log_params.distance_penalty,
+                    "space_count_reward": log_params.space_count_reward,
+                    "weights": list(log_params.weights),
+                }
+            )
+
             print(f"Gen {gen:03d} | eval_time={dt:.3f} | best={gen_best_score:.1f} | global_best={goat_score:.2f}")
 
             # Elitism
@@ -128,17 +143,31 @@ def evolve():
     print("Best fitness:", goat_score)
 
     os.makedirs("params", exist_ok=True)
-    with open("params/best_ga_params.json", "w") as f:
-        json.dump(
-            {
-                "fitness": goat_score,
-                "distance_penalty": best_params.distance_penalty,
-                "space_count_reward": best_params.space_count_reward,
-                "weights": list(best_params.weights),
-            },
-            f,
-            indent=2,
-        )
+
+    with open(PARAMS_FILE_NAME, "w") as f:
+        json.dump(param_log, f, indent=2)
+
+    try:
+        with open("params/best_ga_params.json", "r") as f:
+            prev_best = json.load(f)
+            score = prev_best["fitness"]
+
+    except Exception as e:
+        print(e)
+        score = 0
+
+    if score > goat_score:
+        with open("params/best_ga_params.json", "w") as f:
+            json.dump(
+                {
+                    "fitness": goat_score,
+                    "distance_penalty": best_params.distance_penalty,
+                    "space_count_reward": best_params.space_count_reward,
+                    "weights": list(best_params.weights),
+                },
+                f,
+                indent=2,
+            )
 
 
 if __name__ == "__main__":
