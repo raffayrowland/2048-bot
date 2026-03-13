@@ -7,6 +7,7 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from typing import Tuple, List
 
+os.makedirs("params", exist_ok=True)
 PARAMS_FILE_NAME = f"params/params{int(time.time())}.json"
 param_log = []
 
@@ -117,6 +118,9 @@ def evolve():
                 }
             )
 
+            with open(PARAMS_FILE_NAME, "w") as f:
+                json.dump(param_log, f, indent=2)
+
             print(f"Gen {gen:03d} | eval_time={dt:.3f} | best={gen_best_score:.1f} | global_best={goat_score:.2f}")
 
             # Elitism
@@ -141,11 +145,6 @@ def evolve():
         if (i + 1) % 4 == 0:
             print()
     print("Best fitness:", goat_score)
-
-    os.makedirs("params", exist_ok=True)
-
-    with open(PARAMS_FILE_NAME, "w") as f:
-        json.dump(param_log, f, indent=2)
 
     try:
         with open("params/best_ga_params.json", "r") as f:
