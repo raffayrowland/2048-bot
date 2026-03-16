@@ -15,7 +15,7 @@ param_log = []
 GENE_BOUNDS: List[Tuple[float, float]] = [
     (0.0, 100.0),  # Distance penalty bound
     (0.0, 1.0),  # Max space reward bound
-] + [(-32.0, 1024.0)] * 16  # Weight bounds
+] + [(-256.0, 1024.0)] * 16  # Weight bounds
 
 POPULATION_SIZE = 80
 GENERATIONS = 35
@@ -25,7 +25,7 @@ ELITE_COUNT = 4
 TOURNAMENT_K = 9
 MUTATION_RATE = 0.25
 MUTATION_STD_FRAC = 0.08
-MAX_PARALLEL_PLAYERS = 16
+MAX_PARALLEL_PLAYERS = 20
 
 def clamp(x, lo, hi):
     return max(lo, min(x, hi))
@@ -45,15 +45,6 @@ def chromosome_to_params(chromosome):
 def run_seeded_episode(seed, params, depth):
     random.seed(seed)
     return start_one_player(params, depth=depth)
-
-def fitness(chromosome, seeds, episodes=3, depth=2):
-    params = chromosome_to_params(chromosome)
-    episode_seeds = seeds[:episodes]
-    if not episode_seeds:
-        return 0.0
-
-    scores = [run_seeded_episode(seed, params, depth) for seed in episode_seeds]
-    return sum(scores) / len(episode_seeds)
 
 def tournament_select(scored_pop, k=TOURNAMENT_K):
     contenders = random.sample(scored_pop, k)
@@ -90,15 +81,26 @@ def evolve():
 
             t0 = time.perf_counter()
 
-            futures = [
-                executor.submit(fitness, chromosome, seeds, EPISODES_PER_FITNESS, SEARCH_DEPTH)
-                for chromosome in population
-            ]
-            scores = [future.result() for future in futures]
+            futures = []
+            params = [chromosome_to_params(chromosome) for chromosome in population]
+
+            for seed in seeds[:EPISODES_PER_FITNESS]:
+                for i in range(len(population)):
+                    futures.append((executor.submit(run_seeded_episode, seed, params[i], SEARCH_DEPTH), i ))
+
+            scores = [(future.result(), player_idx) for future, player_idx in futures]
+
+            grouped_scores = [0] * len(population)
+
+            for score, player_idx in scores:
+                grouped_scores[player_idx] += score
+
+            for i in range(len(grouped_scores)):
+                grouped_scores[i] /= EPISODES_PER_FITNESS
 
             dt = time.perf_counter() - t0
 
-            scored = list(zip(population, scores))
+            scored = list(zip(population, grouped_scores))
             scored.sort(key = lambda x: x[1], reverse = True)
 
             gen_best, gen_best_score = scored[0]
