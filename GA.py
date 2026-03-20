@@ -30,7 +30,6 @@ if os.path.exists("params/" + PARAMS_FILE_NAME):
     gen_log = json.load(open("params/" + PARAMS_FILE_NAME))
 
 else:
-    open("params/" + PARAMS_FILE_NAME, "w").close()
     gen_log = {
         "params": {
             "population_size": POPULATION_SIZE,
