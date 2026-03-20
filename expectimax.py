@@ -95,7 +95,7 @@ def get_best_move(board, depth, params):
     boards_after_moves = generate_boards_after_possible_moves(board)  # (move_idx, new_board)
 
     if not boards_after_moves:
-        best = (None, -1000)
+        best = (None, -1e18)
         move_cache[board_key] = best
         return best
 

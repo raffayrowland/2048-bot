@@ -11,9 +11,9 @@ MY_WEIGHTS = [
 ]
 
 trained_params = json.load(open("params/best_ga_params.json"))
-TRAINED_DISTANCE_PENALTY = trained_params["distance_penalty"]
-TRAINED_SPACE_COUNT = trained_params["space_count_reward"]
-TRAINED_WEIGHTS = trained_params["weights"]
+TRAINED_DISTANCE_PENALTY = trained_params["evaluation_params"]["distance_penalty"]
+TRAINED_SPACE_COUNT = trained_params["evaluation_params"]["space_count_reward"]
+TRAINED_WEIGHTS = trained_params["evaluation_params"]["weights"]
 
 @dataclass(frozen=True)
 class EvalParams:

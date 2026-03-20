@@ -9,7 +9,7 @@ from typing import Tuple, List
 
 os.makedirs("params", exist_ok=True)
 PARAMS_FILE_NAME = f"params/params{int(time.time())}.json"
-param_log = []
+RESUME_PREVIOUS_TRAINING = True
 
 # [distance_penalty, space_count_reward, w0 ... w15]
 GENE_BOUNDS: List[Tuple[float, float]] = [
@@ -17,15 +17,52 @@ GENE_BOUNDS: List[Tuple[float, float]] = [
     (0.0, 1.0),  # Max space reward bound
 ] + [(-256.0, 1024.0)] * 16  # Weight bounds
 
-POPULATION_SIZE = 80
-GENERATIONS = 35
-EPISODES_PER_FITNESS = 15
-SEARCH_DEPTH = 1
-ELITE_COUNT = 4
-TOURNAMENT_K = 9
-MUTATION_RATE = 0.25
-MUTATION_STD_FRAC = 0.08
-MAX_PARALLEL_PLAYERS = 20
+if RESUME_PREVIOUS_TRAINING:
+    with open("params/best_ga_params.json", "r") as f:
+        params = json.load(f)
+        POPULATION_SIZE = params["training_params"]["population_size"]
+        GENERATIONS = params["training_params"]["generations"]
+        EPISODES_PER_FITNESS = params["training_params"]["episodes_per_fitness"]
+        SEARCH_DEPTH = params["training_params"]["search_depth"]
+        ELITE_COUNT = params["training_params"]["elite_count"]
+        TOURNAMENT_K = params["training_params"]["tournament_k"]
+        MUTATION_RATE = params["training_params"]["mutation_rate"]
+        MUTATION_STD_FRAC = params["training_params"]["mutation_std_frac"]
+        MAX_PARALLEL_PLAYERS = params["training_params"]["max_parallel_players"]
+
+        prev_population = params["evaluation_params"]["population"]
+        prev_eval = params["evaluation_params"]
+        prev_goat = params["evaluation_params"]["goat"]
+        prev_goat_score = params["evaluation_params"]["fitness"]
+
+elif not RESUME_PREVIOUS_TRAINING:
+    POPULATION_SIZE = 150
+    GENERATIONS = 15
+    EPISODES_PER_FITNESS = 15
+    SEARCH_DEPTH = 1
+    ELITE_COUNT = 4
+    TOURNAMENT_K = 9
+    MUTATION_RATE = 0.25
+    MUTATION_STD_FRAC = 0.08
+    MAX_PARALLEL_PLAYERS = 20
+
+gen_log = {
+    "params": {
+        "population_size": POPULATION_SIZE,
+        "generations": GENERATIONS,
+        "episodes_per_fitness": EPISODES_PER_FITNESS,
+        "search_depth": SEARCH_DEPTH,
+        "elite_count": ELITE_COUNT,
+        "tournament_k": TOURNAMENT_K,
+        "mutation_rate": MUTATION_RATE,
+        "mutation_std_frac": MUTATION_STD_FRAC,
+        "max_parallel_players": MAX_PARALLEL_PLAYERS
+    },
+
+    "generations": [
+
+    ]
+}
 
 def clamp(x, lo, hi):
     return max(lo, min(x, hi))
@@ -71,9 +108,15 @@ def mutate(chromosome):
     return out
 
 def evolve():
-    population = [random_chromosome() for _ in range(POPULATION_SIZE)]
-    goat = None
-    goat_score = float("-inf")
+    if RESUME_PREVIOUS_TRAINING:
+        population = prev_population
+        goat = prev_goat
+        goat_score = prev_goat_score
+
+    else:
+        population = [random_chromosome() for _ in range(POPULATION_SIZE)]
+        goat = None
+        goat_score = float("-inf")
 
     with ProcessPoolExecutor(max_workers=MAX_PARALLEL_PLAYERS) as executor:
         for gen in range(GENERATIONS):
@@ -108,21 +151,6 @@ def evolve():
                 goat_score = gen_best_score
                 goat = gen_best[:]
 
-            log_params = chromosome_to_params(gen_best)
-
-            param_log.append(
-                {
-                    "generation": gen,
-                    "fitness": gen_best_score,
-                    "distance_penalty": log_params.distance_penalty,
-                    "space_count_reward": log_params.space_count_reward,
-                    "weights": list(log_params.weights),
-                }
-            )
-
-            with open(PARAMS_FILE_NAME, "w") as f:
-                json.dump(param_log, f, indent=2)
-
             print(f"Gen {gen:03d} | eval_time={dt:.3f} | best={gen_best_score:.1f} | global_best={goat_score:.2f}")
 
             # Elitism
@@ -138,6 +166,21 @@ def evolve():
 
             population = next_population
 
+            log_params = chromosome_to_params(gen_best)
+            gen_log["generations"].append(
+                {
+                    "generation": gen,
+                    "fitness": gen_best_score,
+                    "distance_penalty": log_params.distance_penalty,
+                    "space_count_reward": log_params.space_count_reward,
+                    "weights": list(log_params.weights),
+                    "population": population
+                }
+            )
+
+            with open(PARAMS_FILE_NAME, "w") as f:
+                json.dump(gen_log, f, indent=2)
+
     best_params = chromosome_to_params(goat)
     print("\nBest chromosome:", goat)
     print(f"Best distance penalty: {best_params.distance_penalty}")
@@ -151,20 +194,36 @@ def evolve():
     try:
         with open("params/best_ga_params.json", "r") as f:
             prev_best = json.load(f)
-            score = prev_best["fitness"]
+            score = prev_best["evaluation_params"]["fitness"]
 
     except Exception as e:
         print(e)
         score = 0
 
     if score > goat_score:
+        best_params = chromosome_to_params(goat)
         with open("params/best_ga_params.json", "w") as f:
             json.dump(
                 {
-                    "fitness": goat_score,
-                    "distance_penalty": best_params.distance_penalty,
-                    "space_count_reward": best_params.space_count_reward,
-                    "weights": list(best_params.weights),
+                    "training_params": {
+                        "population_size": POPULATION_SIZE,
+                        "generations": GENERATIONS,
+                        "episodes_per_fitness": EPISODES_PER_FITNESS,
+                        "search_depth": SEARCH_DEPTH,
+                        "elite_count": ELITE_COUNT,
+                        "tournament_k": TOURNAMENT_K,
+                        "mutation_rate": MUTATION_RATE,
+                        "mutation_std_frac": MUTATION_STD_FRAC,
+                        "max_parallel_players": MAX_PARALLEL_PLAYERS
+                    },
+                    "evaluation_params": {
+                        "fitness": goat_score,
+                        "distance_penalty": best_params.distance_penalty,
+                        "space_count_reward": best_params.space_count_reward,
+                        "weights": list(best_params.weights),
+                        "goat": goat,
+                        "population": population
+                    }
                 },
                 f,
                 indent=2,
