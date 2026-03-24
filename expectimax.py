@@ -120,9 +120,13 @@ def get_best_move(board, depth, params):
     move_cache[board_key] = best
     return best
 
-def start_one_player(params, depth=2):
+def start_one_player(params, depth=2, replay_path=None):
     play_board = start_game()
     total_score = 0
+    rec = None
+
+    if replay_path is not None:
+        rec = start_game_record(replay_path, play_board, total_score)
 
     while not is_game_over(play_board):
         best_move = get_best_move(play_board, depth, params)[0]
@@ -131,8 +135,13 @@ def start_one_player(params, depth=2):
 
         _, play_board, score = do_move_if_legal(play_board, MOVES[best_move][1], spawn=True)
         total_score += score
+        if rec is not None:
+            record_game_step(rec, best_move, play_board, total_score)
 
         clear_cache()
+
+    if rec is not None:
+        finish_game_record(rec)
 
     return total_score
 
@@ -144,7 +153,7 @@ if __name__ == '__main__':
     rec = start_game_record("replays/latest_game.json", play_board, total_score)
 
     while not is_game_over(play_board):
-        best_move = get_best_move(play_board, 2, default_params)[0]
+        best_move = get_best_move(play_board, 1, default_params)[0]
         if best_move is None:
             break
 
