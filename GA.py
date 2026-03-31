@@ -13,7 +13,7 @@ GENE_BOUNDS: List[Tuple[float, float]] = [
     (0.0, 1.0),  # Max space reward bound
 ] + [(-256.0, 1024.0)] * 16  # Weight bounds
 
-GENERATIONS = 30
+GENERATIONS = 1
 POPULATION_SIZE = 150
 EPISODES_PER_FITNESS = 15
 SEARCH_DEPTH = 1
@@ -180,8 +180,8 @@ def evolve():
             prev_best = json.load(f)
             score = prev_best["evaluation_params"]["fitness"]
 
-    except Exception as e:
-        print(e)
+    except FileNotFoundError as e:
+        open("params/best_ga_params.json", "w").close()
         score = 0
 
     if score < goat_score:
