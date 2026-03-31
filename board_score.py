@@ -10,10 +10,16 @@ MY_WEIGHTS = [
     512, 256, 128, 64,
 ]
 
-trained_params = json.load(open("params/best_ga_params.json"))
-TRAINED_DISTANCE_PENALTY = trained_params["evaluation_params"]["distance_penalty"]
-TRAINED_SPACE_COUNT = trained_params["evaluation_params"]["space_count_reward"]
-TRAINED_WEIGHTS = trained_params["evaluation_params"]["weights"]
+try:
+    trained_params = json.load(open("params/best_ga_params.json"))
+    TRAINED_DISTANCE_PENALTY = trained_params["evaluation_params"]["distance_penalty"]
+    TRAINED_SPACE_COUNT = trained_params["evaluation_params"]["space_count_reward"]
+    TRAINED_WEIGHTS = trained_params["evaluation_params"]["weights"]
+
+except FileNotFoundError:
+    TRAINED_DISTANCE_PENALTY = 0.0
+    TRAINED_SPACE_COUNT = 0.0
+    TRAINED_WEIGHTS = MY_WEIGHTS
 
 @dataclass(frozen=True)
 class EvalParams:
