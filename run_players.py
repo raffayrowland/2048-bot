@@ -5,7 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 from visuals import replay_recording
 
 RUNS = 100
-MAX_WORKERS = 20
+MAX_WORKERS = 15
 DEPTH = 1
 REPLAY_DIR = Path("replays")
 
