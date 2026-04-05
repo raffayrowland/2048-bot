@@ -4,15 +4,16 @@ from board_score import default_params
 from concurrent.futures import ProcessPoolExecutor
 from visuals import replay_recording
 
-RUNS = 100
+RUNS = 50
 MAX_WORKERS = 15
-DEPTH = 1
+DEPTH = 2
 REPLAY_DIR = Path("replays")
 
 
 def run_one_with_replay(run_idx: int):
     replay_path = REPLAY_DIR / f"run_{run_idx}.json"
     score = start_one_player(default_params, DEPTH, replay_path=str(replay_path))
+    print(score)
     return score, str(replay_path)
 
 
