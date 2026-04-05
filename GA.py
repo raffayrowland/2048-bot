@@ -13,7 +13,7 @@ GENE_BOUNDS: List[Tuple[float, float]] = [
     (0.0, 1.0),  # Max space reward bound
 ] + [(-256.0, 1024.0)] * 16  # Weight bounds
 
-GENERATIONS = 10
+GENERATIONS = 5
 POPULATION_SIZE = 150
 EPISODES_PER_FITNESS = 10
 SEARCH_DEPTH = 2
