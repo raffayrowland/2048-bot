@@ -4,9 +4,9 @@ from board_score import default_params
 from concurrent.futures import ProcessPoolExecutor
 from visuals import replay_recording
 
-RUNS = 200
-MAX_WORKERS = 20
-DEPTH = 2
+RUNS = 1000
+MAX_WORKERS = 16
+DEPTH = 3
 REPLAY_DIR = Path("replays")
 
 
