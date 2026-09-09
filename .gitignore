@@ -2,6 +2,6 @@
 .idea
 __pycache__
 replays
-params
-expectimax.prof
-TODO.txt
+PERFORMANCE.md
+README.md
+.gitignore

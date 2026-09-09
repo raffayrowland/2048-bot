@@ -18,7 +18,7 @@ MOVE_CODE_TO_NAME = {
     "down": "down",
 }
 
-# Colors from the original 2048 visual style.
+# Colours from the original 2048 visual style.
 TILE_COLORS = {
     0: "#cdc1b4",
     2: "#eee4da",

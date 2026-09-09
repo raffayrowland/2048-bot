@@ -4,8 +4,8 @@ from board_score import default_params
 from concurrent.futures import ProcessPoolExecutor
 from visuals import replay_recording
 
-RUNS = 50
-MAX_WORKERS = 15
+RUNS = 200
+MAX_WORKERS = 20
 DEPTH = 2
 REPLAY_DIR = Path("replays")
 
@@ -25,5 +25,5 @@ if __name__ == "__main__":
         results = [future.result() for future in futures]
 
     best_score, best_replay_path = max(results, key=lambda item: item[0])
-    print(f"Best score: {best_score}")
+    print(f"Best score: {best_score}, Path: {best_replay_path}")
     replay_recording(best_replay_path)

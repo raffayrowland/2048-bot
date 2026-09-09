@@ -90,15 +90,9 @@ def mutate(chromosome):
     return out
 
 def evolve():
-    if gen_log["generations"] != []:
-        population = gen_log["generations"][-1]["population"]
-        goat = gen_log["generations"][-1]["goat"]
-        goat_score = gen_log["generations"][-1]["goat_score"]
-
-    else:
-        population = [random_chromosome() for _ in range(POPULATION_SIZE)]
-        goat = None
-        goat_score = float("-inf")
+    population = [random_chromosome() for _ in range(POPULATION_SIZE)]
+    goat = None
+    goat_score = float("-inf")
 
     with ProcessPoolExecutor(max_workers=MAX_PARALLEL_PLAYERS) as executor:
         for gen in range(GENERATIONS):

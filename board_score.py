@@ -1,5 +1,5 @@
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple
 import json
 
@@ -26,9 +26,16 @@ class EvalParams:
     distance_penalty: float = TRAINED_DISTANCE_PENALTY
     space_count_reward: float = TRAINED_SPACE_COUNT
     weights: Tuple[float, ...] = tuple(TRAINED_WEIGHTS)
+    _hash: int = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
         object.__setattr__(self, "weights", tuple(self.weights))
+        object.__setattr__(self, "_hash", hash((
+            self.distance_penalty, self.space_count_reward, self.weights,
+        )))
+
+    def __hash__(self):
+        return self._hash
 
 default_params = EvalParams()
 

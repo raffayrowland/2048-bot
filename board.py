@@ -88,11 +88,10 @@ def up(board):
     new_board = [0] * 16
 
     for i in range(4):
-        row = [board[x] for x in range(i, i + 16, 4)]
+        row = board[i::4]
         new_row, score = move_row_left_or_up(row)
         total_score += score
-        for j in range(i, i + 16, 4):
-            new_board[j] = new_row[j // 4]
+        new_board[i::4] = new_row
 
     changed = (board != new_board)
     return changed, new_board, total_score
@@ -102,11 +101,10 @@ def down(board):
     new_board = [0] * 16
 
     for i in range(4):
-        row = [board[x] for x in range(i, i + 16, 4)]
+        row = board[i::4]
         new_row, score = move_row_right_or_down(row)
         total_score += score
-        for j in range(i, i + 16, 4):
-            new_board[j] = new_row[j // 4]
+        new_board[i::4] = new_row
 
     changed = (board != new_board)
     return changed, new_board, total_score
