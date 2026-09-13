@@ -6,7 +6,7 @@ that measures a board's 'promisingness'
 
 ## Demo
 
-This was one of the runs which reached the 8196 tile, taking about 14 minutes.
+This was one of the runs which reached the 8196 tile, taking about 14 minutes and reaching a final score of 133,216
 
 ![gif](2048.gif)
 
